@@ -1,7 +1,9 @@
 # TokenPoacher
-Poach SYSTEM tokens for profit!
+Poach SYSTEM tokens for fun & profit!
 
-https://youtu.be/N06auZgg-Kw
+https://youtu.be/N06auZgg-Kw - quick rundown on commands
+
+https://youtu.be/BwWOXgqANZU - I walk/talk you through how to use this tool and what it does.  We will review some of the code, explain how to use Process Hacker/System Informer to review token privileges and assigned privileges via the tool, and more! 
 
 ## What it does
 
