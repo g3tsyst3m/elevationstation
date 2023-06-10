@@ -4,19 +4,19 @@ Poach SYSTEM tokens for profit!
 https://youtu.be/N06auZgg-Kw
 
 ## What it does
-<hr>
+
 Token Poacher is a privilege escalation tool.  It works by borrowing from commonly used escalation techniques involving process and thread tokens.  The current version supports escalating from local admin to SYSTEM by duplicating a token from a SYSTEM process. 
 
 ## Why reinvent the wheel with yet another privilege escalation utility?
-<hr>
+
 This was a combined effort between avoiding AV alerts using Metasploit and furthering my research into privilege escalation methods.  In brief: My main goal here was to learn about token management and manipulation, and to effectively bypass AV.  I knew there were other tools out there to achieve privilege escalation using token manip but I wanted to learn for myself how it all works.
 
 ## So...How does it work?
-<hr>
+
 Looking through the terribly organized code, you'll see I used two methods to get SYSTEM so far; stealing a Primary token from a SYSTEM level process, and stealing an Impersonation thread token to convert to a primary token from another SYSTEM level process.  
 
 ## CreateProcessAsUser versus CreateProcessWithToken
-<hr>
+
 This was another driving force behind furthering my research.  Unless one resorts to using named pipes for escalation, or inject a dll into a system level process, I couldn't see an easy way to spawn a SYSTEM shell within the same console AND meet token privilege requirements.
 
 <b> Let me explain... </b>
