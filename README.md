@@ -5,7 +5,7 @@ https://youtu.be/N06auZgg-Kw
 
 ## What it does
 
-Token Poacher is a privilege escalation tool.  It works by borrowing from commonly used escalation techniques involving process and thread tokens.  The current version supports escalating from local admin to SYSTEM by duplicating a token from a SYSTEM process. 
+Token Poacher is a privilege escalation tool.  It works by borrowing from commonly used escalation techniques involving duplication of process and thread tokens.  The current version supports escalating from local admin to SYSTEM by duplicating the primary token from a SYSTEM process and duplicating the impersonation thread token from a SYSTEM process. 
 
 ## Why reinvent the wheel with yet another privilege escalation utility?
 
