@@ -31,6 +31,12 @@ TEXT("SeIncreaseQuotaPrivilege")
 
 I found a way around that...stealing tokens from SYSTEM process threads :)  We duplicate the thread IMPERSONATION token, set the thread token, and then convert it to primary and then re-run our enable privileges function.  This time, the enabling of the two privileges above succeeds and we are presented with a shell within the same console using CreateProcessAsUser.  No dll injections, no named pipe impersonations, just token manipulation/duplication. 
 
+## What are the "Experimental" features?
+
+Glad you asked :)  There are occasions where the red teamer needs to lower their process integrity levels.  This does just that...however, it's not as I'd like it to be just yet.  I probably need to resort to creating a restricted token when lowering the process integrity, say from SYSTEM to HIGH, or HIGH to MEDIUM.  If you're running in an elevated process, it keeps the elevated token but reduces the integrity.  So, that's a current "bug" I'm working through.
+
+## Progress
+
 This code is HEAVILY under development and not ready for production yet.  It's messy, and all over the place. But it does afford the red teamer some options to work with for easy privilege escalation from admin to SYSTEM
 I was just eager to share what i've researched so far.  
 
