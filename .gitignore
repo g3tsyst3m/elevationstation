@@ -33,3 +33,6 @@
 
 # Folders
 .vs/
+x64/
+x86/
+Debug/
