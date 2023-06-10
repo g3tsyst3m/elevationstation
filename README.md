@@ -35,6 +35,8 @@ I found a way around that...stealing tokens from SYSTEM process threads :)  We d
 
 Glad you asked :)  There are occasions where the red teamer needs to lower their process integrity levels.  This does just that...however, it's not as I'd like it to be just yet.  I probably need to resort to creating a restricted token when lowering the process integrity, say from SYSTEM to HIGH, or HIGH to MEDIUM.  If you're running in an elevated process, it keeps the elevated token but reduces the integrity.  So, that's a current "bug" I'm working through.
 
+Another experimental feature is executing various API functions using SYSTEM impersonation tokens.  One could write a file to disk in another user's folder, create a new user and add them to the administrators group, etc. An example of this where we use the impersonation token to create a file under another user's directory is included in the code, but I currently have it commented out.
+
 ## Progress
 
 This code is HEAVILY under development and not ready for production yet.  It's messy, and all over the place. But it does afford the red teamer some options to work with for easy privilege escalation from admin to SYSTEM
