@@ -3,7 +3,10 @@
 
 
 # TokenPoacher
-Poach SYSTEM tokens for fun & profit!  We duplicate things, make twin copies, and then ride away.  Here's Johnny!!
+Poach SYSTEM tokens for fun & profit!  We duplicate things, make twin copies, and then ride away.
+You have used metasploit's getsystem, correct?  Well, here's a partial standalone version of that.
+
+Here's Johnny!!
 
 <b>quick rundown on commands</b>
 
