@@ -1,9 +1,15 @@
+
+![the-shining-tricycle](https://github.com/g3tsyst3m/tokenpoacher/assets/19558280/6a74eba4-7a60-4e13-8c5f-d592e4de8858)
+
+
 # TokenPoacher
-Poach SYSTEM tokens for fun & profit!
+Poach SYSTEM tokens for fun & profit!  We duplicate things, make twin copies, and then ride away.  Here's Johnny!!
 
-https://youtu.be/N06auZgg-Kw - quick rundown on commands
+<b>quick rundown on commands</b>
 
-https://youtu.be/BwWOXgqANZU - I walk/talk you through how to use this tool and what it does.  We will review some of the code, explain how to use Process Hacker/System Informer to review token privileges and assigned privileges via the tool, and more! 
+https://github.com/g3tsyst3m/tokenpoacher/assets/19558280/ec886d05-412e-45e4-9314-71495ed43297
+
+https://youtu.be/BwWOXgqANZU - I walk/talk you through how to use this tool and what it does in more depth.  We will review some of the code, explain how to use Process Hacker/System Informer to review token privileges and assigned privileges via the tool, and more! 
 
 ## What it does
 
