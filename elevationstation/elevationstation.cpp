@@ -8,6 +8,7 @@
 #include <userenv.h>
 #include <Dbghelp.h>
 #include <winternl.h>
+#include "settokenprivs.h"
 
 #pragma comment(lib, "userenv.lib")
 
@@ -21,90 +22,6 @@ using namespace std;
 //more integrity level info #2: https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/09ebc7f1-e3e9-4fd3-a57e-1d43b36e8f82/how-to-tell-what-processes-are-running-with-elevated-privileges?forum=windowssecurity
 //SID info: https://learn.microsoft.com/en-US/windows-server/identity/ad-ds/manage/understand-security-identifiers
 //lower our token integrity level example: https://kb.digital-detective.net/display/BF/Understanding+and+Working+in+Protected+Mode+Internet+Explorer
-
-
-void setThreadPrivs(LPCWSTR privname)
-{
-    //cin.get();
-    TOKEN_PRIVILEGES tp;
-    LUID luid;
-    HANDLE pToken;
-
-    if (!LookupPrivilegeValue(
-        NULL,            // lookup privilege on local system
-        privname,   // privilege to lookup 
-        &luid))        // receives LUID of privilege
-    {
-        printf("LookupPrivilegeValue error: %u\n", GetLastError());
-        exit(0);
-    }
-
-    tp.PrivilegeCount = 1;
-    tp.Privileges[0].Luid = luid;
-    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-    if (OpenThreadToken(GetCurrentThread(), TOKEN_ADJUST_PRIVILEGES, NULL, &pToken))
-        printf("[+] opened process thread token!\n");
-    else
-        printf("error opening thread token: %d\n", GetLastError());
-
-    if (!AdjustTokenPrivileges(pToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL))
-    {
-        printf("{!] AdjustTokenPrivileges error: %u\n", GetLastError());
-        exit(0);
-    }
-
-    if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
-
-    {
-        printf("{!] The thread token does not have this specified privilege available to the process. \n");
-        exit(0);
-    }
-    printf("[+] Privilege: %ws added successfully  to the thread!!!\n", privname);
-    CloseHandle(pToken);
-    //cin.get();
-}
-
-
-void setProcessPrivs(LPCWSTR privname)
-{
-    //cin.get();
-    TOKEN_PRIVILEGES tp;
-    LUID luid;
-    HANDLE pToken;
-
-    if (!LookupPrivilegeValue(
-        NULL,            // lookup privilege on local system
-        privname,   // privilege to lookup 
-        &luid))        // receives LUID of privilege
-    {
-        printf("LookupPrivilegeValue error: %u\n", GetLastError());
-        exit(0);
-    }
-
-    tp.PrivilegeCount = 1;
-    tp.Privileges[0].Luid = luid;
-    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-    if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &pToken))
-        printf("[+] opened process token!\n");
-
-    if (!AdjustTokenPrivileges(pToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL))
-    {
-        printf("{!] AdjustTokenPrivileges error: %u\n", GetLastError());
-        exit(0);
-    }
-
-    if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
-
-    {
-        printf("{!] The token does not have this specified privilege available to the process. \n");
-        exit(0);
-    }
-    printf("[+] Privilege: %ws added successfully!!!\n", privname);
-    CloseHandle(pToken);
-    //cin.get();
-}
 
 void NamedPipeImpersonate()
 {
@@ -779,8 +696,6 @@ int main(int argc, char* argv[])
         printf("usage: elevationstation.exe -lcp\n");
         printf("usage: elevationstation.exe -p 1234 -l\n");
 
-
-        //printf("usage: processpoacher.exe -p 1234 -dp\n");
         exit(0);
     }
     /*
