@@ -18,9 +18,12 @@
     <ClCompile Include="elevationstation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="tokenprivs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="settokenprivs.h">
+    <ClInclude Include="def.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

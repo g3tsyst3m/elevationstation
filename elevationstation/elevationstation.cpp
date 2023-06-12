@@ -8,7 +8,7 @@
 #include <userenv.h>
 #include <Dbghelp.h>
 #include <winternl.h>
-#include "settokenprivs.h"
+#include "def.h"
 
 #pragma comment(lib, "userenv.lib")
 

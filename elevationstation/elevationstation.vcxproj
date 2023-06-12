@@ -128,9 +128,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="elevationstation.cpp" />
+    <ClCompile Include="tokenprivs.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="settokenprivs.h" />
+    <ClInclude Include="def.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
