@@ -2,21 +2,21 @@
 ![the-shining-tricycle](https://github.com/g3tsyst3m/tokenpoacher/assets/19558280/6a74eba4-7a60-4e13-8c5f-d592e4de8858)
 
 
-# TokenPoacher
-Poach SYSTEM tokens for fun & profit!  We duplicate things, make twin copies, and then ride away.
-You have used metasploit's getsystem, correct?  Well, here's a partial standalone version of that.
-
-Here's Johnny!!
+# Elevation Station
+Stealing and Duplicating SYSTEM tokens for fun & profit!  We duplicate things, make twin copies, and then ride away.
+You have used metasploit's getsystem, correct?  Well, here's a similar standalone version of that...but without the AV issues
 
 <b>quick rundown on commands</b>
 
-https://github.com/g3tsyst3m/tokenpoacher/assets/19558280/ec886d05-412e-45e4-9314-71495ed43297
+https://github.com/g3tsyst3m/elevationstation/assets/19558280/1a6ed2d9-a12e-46d4-ad7e-e97270a43f5a
 
-https://youtu.be/BwWOXgqANZU - I walk/talk you through how to use this tool and what it does in more depth.  We will review some of the code, explain how to use Process Hacker/System Informer to review token privileges and assigned privileges via the tool, and more! 
+https://github.com/g3tsyst3m/elevationstation/assets/19558280/b309e074-83cf-403a-a0aa-5b124076066b
+
+https://github.com/g3tsyst3m/elevationstation/assets/19558280/954ce365-702b-4fd0-96bd-d77a5c4f81c4
 
 ## What it does
 
-Token Poacher is a privilege escalation tool.  It works by borrowing from commonly used escalation techniques involving duplication of process and thread tokens.  The current version supports escalating from local admin to SYSTEM by duplicating the primary token from a SYSTEM process and duplicating the impersonation thread token from a SYSTEM process. 
+ElevationStation is a privilege escalation tool.  It works by borrowing from commonly used escalation techniques involving duplication of process and thread tokens, named pipe escalation, and more!  The current version supports escalating from local admin to SYSTEM by duplicating the primary token from a SYSTEM process, and duplicating the impersonation thread token from a SYSTEM process. It also incorporates named pipe escalation.
 
 ## Why reinvent the wheel with yet another privilege escalation utility?
 
@@ -50,9 +50,6 @@ Another experimental feature is executing various API functions using SYSTEM imp
 
 ## Progress
 
-This code is HEAVILY under development and not ready for production yet.  It's messy, and all over the place. But it does afford the red teamer some options to work with for easy privilege escalation from admin to SYSTEM
-I was just eager to share what i've researched so far.  
+This code is HEAVILY under development, it's messy, and all over the place. But it does afford the red teamer some options to work with for easy privilege escalation from admin to SYSTEM.  I was just eager to share what i've researched so far.  I will be sharing a consistent method to bypass UAC undetected by AV next!
 
 Thanks!
-
-More updates to come soon such as integrating named pipe get SYSTEM techniques
