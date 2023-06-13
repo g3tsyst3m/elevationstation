@@ -8,11 +8,13 @@ You have used metasploit's getsystem, correct?  Well, here's a similar standalon
 
 <b>quick rundown on commands</b>
 
-https://github.com/g3tsyst3m/elevationstation/assets/19558280/1a6ed2d9-a12e-46d4-ad7e-e97270a43f5a
-
-https://github.com/g3tsyst3m/elevationstation/assets/19558280/b309e074-83cf-403a-a0aa-5b124076066b
-
-https://github.com/g3tsyst3m/elevationstation/assets/19558280/954ce365-702b-4fd0-96bd-d77a5c4f81c4
+<b>Duplicate Process Escalation Method
+![dupprocess](https://github.com/g3tsyst3m/elevationstation/assets/19558280/06b17b2f-046b-4376-b6ae-09a9e31f3821)
+Duplicate Thread Escalation Method
+![dupthread](https://github.com/g3tsyst3m/elevationstation/assets/19558280/62a2763c-c356-4f77-961b-4d8ecd671b93)
+Named Pipes Escalation method
+![namedpipes](https://github.com/g3tsyst3m/elevationstation/assets/19558280/3df4c841-6418-42fe-936e-423060fc3351)
+</b>
 
 ## What it does
 
