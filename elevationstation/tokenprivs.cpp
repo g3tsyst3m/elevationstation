@@ -39,7 +39,7 @@ void setThreadPrivs(LPCWSTR privname)
         printf("{!] The thread token does not have this specified privilege available to the process. \n");
         exit(0);
     }
-    printf("[+] Privilege: %ws added successfully  to the thread!!!\n", privname);
+    printf("[+] Privilege: %ws added successfully to the thread!!!\n", privname);
     CloseHandle(pToken);
     //cin.get();
 }
