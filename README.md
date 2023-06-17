@@ -55,6 +55,4 @@ Another experimental feature is executing various API functions using SYSTEM imp
 
 ## Progress
 
-This code is HEAVILY under development, it's messy, and all over the place. But it does afford the red teamer some options to work with for easy privilege escalation from admin to SYSTEM.  I was just eager to share what i've researched so far.  I will be sharing a consistent method to bypass UAC undetected by AV next!
-
-Thanks!
+This has come a long way so far...and I'll keep adding to it and cleaning up the code as time permits me to do so. Thanks for all the support and testing!
