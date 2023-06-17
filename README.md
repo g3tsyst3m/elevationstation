@@ -6,6 +6,9 @@
 Stealing and Duplicating SYSTEM tokens for fun & profit!  We duplicate things, make twin copies, and then ride away.
 You have used metasploit's getsystem, correct?  Well, here's a similar standalone version of that...but without the AV issues
 
+<b>NEW! Bypass UAC and escalate from medium integrity to high (must be member of local admin group)
+![UACBypass](https://github.com/g3tsyst3m/elevationstation/assets/19558280/46f85e0a-4758-484a-8a07-09674d88a9a3)
+
 <b>quick rundown on commands</b>
 
 <b>Duplicate Process Escalation Method
