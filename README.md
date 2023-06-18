@@ -7,7 +7,8 @@ Stealing and Duplicating SYSTEM tokens for fun & profit!  We duplicate things, m
 You have used metasploit's getsystem, correct?  Well, here's a similar standalone version of that...but without the AV issues
 
 <b>NEW! Bypass UAC and escalate from medium integrity to high (must be member of local admin group)
-![UACBypass](https://github.com/g3tsyst3m/elevationstation/assets/19558280/46f85e0a-4758-484a-8a07-09674d88a9a3)
+![UACBypass_quality](https://github.com/g3tsyst3m/elevationstation/assets/19558280/a68fb013-99b2-4cea-99d1-f549036a61d5)
+
 
 <b>quick rundown on commands</b>
 
