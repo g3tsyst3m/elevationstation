@@ -6,6 +6,9 @@
 Stealing and Duplicating SYSTEM tokens for fun & profit!  We duplicate things, make twin copies, and then ride away.
 You have used metasploit's getsystem, correct?  Well, here's a similar standalone version of that...but without the AV issues
 
+💵💲If you like this tool and would like to help support me in my efforts improving this solution and others like it, please feel free to hit me up on Patreon!
+https://patreon.com/G3tSyst3m
+
 <b>NEW! Bypass UAC and escalate from medium integrity to high (must be member of local admin group)
 ![UACBypass_quality](https://github.com/g3tsyst3m/elevationstation/assets/19558280/a68fb013-99b2-4cea-99d1-f549036a61d5)
 
