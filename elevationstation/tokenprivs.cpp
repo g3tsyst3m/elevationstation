@@ -1,6 +1,7 @@
 #pragma once
 #include <Windows.h>
 #include <iostream>
+#include <conio.h>
 #include "def.h"
 void setThreadPrivs(LPCWSTR privname)
 {
@@ -14,7 +15,7 @@ void setThreadPrivs(LPCWSTR privname)
         privname,   // privilege to lookup 
         &luid))        // receives LUID of privilege
     {
-        printf("LookupPrivilegeValue error: %u\n", GetLastError());
+        printf("[!] LookupPrivilegeValue error: %u\n", GetLastError());
         exit(0);
     }
 
@@ -29,17 +30,23 @@ void setThreadPrivs(LPCWSTR privname)
 
     if (!AdjustTokenPrivileges(pToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL))
     {
+        Color(14);
         printf("{!] AdjustTokenPrivileges error: %u\n", GetLastError());
+        Color(7);
         exit(0);
     }
 
     if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
 
     {
-        printf("{!] The thread token does not have this specified privilege available to the process. \n");
+        Color(14);
+        printf("[!] The thread token does not have this specified privilege available to the process. \n");
+        Color(7);
         exit(0);
     }
+    Color(2);
     printf("[+] Privilege: %ws added successfully to the thread!!!\n", privname);
+    Color(7);
     CloseHandle(pToken);
     //cin.get();
 }
@@ -57,7 +64,9 @@ void setProcessPrivs(LPCWSTR privname)
         privname,   // privilege to lookup 
         &luid))        // receives LUID of privilege
     {
-        printf("LookupPrivilegeValue error: %u\n", GetLastError());
+        Color(14);
+        printf("[!] LookupPrivilegeValue error: %u\n", GetLastError());
+        Color(7);
         exit(0);
     }
 
@@ -70,17 +79,23 @@ void setProcessPrivs(LPCWSTR privname)
 
     if (!AdjustTokenPrivileges(pToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL))
     {
-        printf("{!] AdjustTokenPrivileges error: %u\n", GetLastError());
+        Color(14);
+        printf("[!] AdjustTokenPrivileges error: %u\n", GetLastError());
+        Color(7);
         exit(0);
     }
 
     if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
 
     {
-        printf("{!] The token does not have this specified privilege available to the process. \n");
+        Color(14);
+        printf("[!] The token does not have this specified privilege available to the process. \n");
+        Color(7);
         exit(0);
     }
+    Color(2);
     printf("[+] Privilege: %ws added successfully!!!\n", privname);
+    Color(7);
     CloseHandle(pToken);
     //cin.get();
 }
