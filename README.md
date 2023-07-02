@@ -22,6 +22,8 @@ Duplicate Thread Escalation Method
 ![dupthread](https://github.com/g3tsyst3m/elevationstation/assets/19558280/62a2763c-c356-4f77-961b-4d8ecd671b93)
 Named Pipes Escalation method
 ![namedpipes](https://github.com/g3tsyst3m/elevationstation/assets/19558280/3df4c841-6418-42fe-936e-423060fc3351)
+Remote DLL injection method
+![dllinject](https://github.com/g3tsyst3m/elevationstation/assets/19558280/ec2f8616-e299-4336-a798-c1fdf607fcb1)
 </b>
 
 ## What it does
