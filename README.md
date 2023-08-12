@@ -5,38 +5,51 @@
 # Elevation Station
 Stealing and Duplicating SYSTEM tokens for fun & profit!  We duplicate things, make twin copies, and then ride away.
 
-You have used Metasploit's getsystem and SysInternals PSEXEC for getting system privs, correct?  Well, here's a similar standalone version of that...but without the AV issues...at least for now 😸
+You have used Metasploit's getsystem and SysInternals PSEXEC for getting system privs, correct?  Well, here's a similar standalone version of that...but without the AV issues...at least for now 😸  
+
+This tool also enables you to become **TrustedInstaller**, similar to what Process Hacker/System Informer can do.  This functionality is very new and added in the latest code release and binary release as of 8/12/2023!
 
 💵💲If you like this tool and would like to help support me in my efforts improving this solution and others like it, please feel free to hit me up on Patreon!
 https://patreon.com/G3tSyst3m
 
-<b>NEW! Bypass UAC and escalate from medium integrity to high (must be member of local admin group)
-![UACBypass_quality](https://github.com/g3tsyst3m/elevationstation/assets/19558280/a68fb013-99b2-4cea-99d1-f549036a61d5)
-
-
 <b>quick rundown on commands</b>
 
+<b>Bypass UAC and escalate from medium integrity to high (must be member of local admin group)
+
+![uacbyp](https://github.com/g3tsyst3m/elevationstation/assets/19558280/c0dd63c9-635a-4c83-983b-ef37c27d1106)
+
+<b> Become Trusted Installer!
+
+![trustedinstaller](https://github.com/g3tsyst3m/elevationstation/assets/19558280/7560e785-d4b6-4914-96e5-1b0e7f922e7f)
+
 <b>Duplicate Process Escalation Method
+
 ![dupprocess](https://github.com/g3tsyst3m/elevationstation/assets/19558280/06b17b2f-046b-4376-b6ae-09a9e31f3821)
+
 Duplicate Thread Escalation Method
+
 ![dupthread](https://github.com/g3tsyst3m/elevationstation/assets/19558280/62a2763c-c356-4f77-961b-4d8ecd671b93)
+
 Named Pipes Escalation method
-![namedpipes](https://github.com/g3tsyst3m/elevationstation/assets/19558280/3df4c841-6418-42fe-936e-423060fc3351)
-Remote DLL injection method
-![dllinject](https://github.com/g3tsyst3m/elevationstation/assets/19558280/ec2f8616-e299-4336-a798-c1fdf607fcb1)
+
+![namedpipes2](https://github.com/g3tsyst3m/elevationstation/assets/19558280/b75e5455-ad5f-4aa3-9b64-31fcc22501f1)
+
+Create Remote Thread injection method
+![CreateRemoteThread](https://github.com/g3tsyst3m/elevationstation/assets/19558280/a4b67302-3b26-4f48-ad37-4473dd87d37a)
+
 </b>
 
 ## What it does
 
-ElevationStation is a privilege escalation tool.  It works by borrowing from commonly used escalation techniques involving duplication of process and thread tokens, named pipe escalation, and more!  The current version supports escalating from local admin to SYSTEM by duplicating the primary token from a SYSTEM process, and duplicating the impersonation thread token from a SYSTEM process. It also incorporates named pipe escalation.
+ElevationStation is a privilege escalation tool.  It works by borrowing from commonly used escalation techniques involving manipulating/duplicating process and thread tokens.  
 
 ## Why reinvent the wheel with yet another privilege escalation utility?
 
-This was a combined effort between avoiding AV alerts using Metasploit and furthering my research into privilege escalation methods.  In brief: My main goal here was to learn about token management and manipulation, and to effectively bypass AV.  I knew there were other tools out there to achieve privilege escalation using token manip but I wanted to learn for myself how it all works.
+This was a combined effort between avoiding AV alerts using Metasploit and furthering my research into privilege escalation methods using tokens.  In brief: My main goal here was to learn about token management and manipulation, and to effectively bypass AV.  I knew there were other tools out there to achieve privilege escalation using token manip but I wanted to learn for myself how it all works.
 
 ## So...How does it work?
 
-Looking through the terribly organized code, you'll see I used two methods to get SYSTEM so far; stealing a Primary token from a SYSTEM level process, and stealing an Impersonation thread token to convert to a primary token from another SYSTEM level process.  
+Looking through the terribly organized code, you'll see I used two **primary** methods to get SYSTEM so far; stealing a Primary token from a SYSTEM level process, and stealing an Impersonation thread token to convert to a primary token from another SYSTEM level process.  That's the general approach at least.
 
 ## CreateProcessAsUser versus CreateProcessWithToken
 
@@ -53,12 +66,6 @@ TEXT("SeAssignPrimaryTokenPrivilege")
 TEXT("SeIncreaseQuotaPrivilege")
 
 I found a way around that...stealing tokens from SYSTEM process threads :)  We duplicate the thread IMPERSONATION token, set the thread token, and then convert it to primary and then re-run our enable privileges function.  This time, the enabling of the two privileges above succeeds and we are presented with a shell within the same console using CreateProcessAsUser.  No dll injections, no named pipe impersonations, just token manipulation/duplication. 
-
-## What are the "Experimental" features?
-
-Glad you asked :)  There are occasions where the red teamer needs to lower their process integrity levels.  This does just that...however, it's not as I'd like it to be just yet.  I probably need to resort to creating a restricted token when lowering the process integrity, say from SYSTEM to HIGH, or HIGH to MEDIUM.  If you're running in an elevated process, it keeps the elevated token but reduces the integrity.  So, that's a current "bug" I'm working through.
-
-Another experimental feature is executing various API functions using SYSTEM impersonation tokens.  One could write a file to disk in another user's folder, create a new user and add them to the administrators group, etc. An example of this where we use the impersonation token to create a file under another user's directory is included in the code, but I currently have it commented out.
 
 ## Progress
 
