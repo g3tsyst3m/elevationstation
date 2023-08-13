@@ -595,9 +595,6 @@ int DupThreadToken(DWORD pid, bool ti)
 
     }
 
-
-
-
     setProcessPrivs(SE_DEBUG_NAME);
 
     BOOL bRet;
@@ -740,6 +737,11 @@ int DupThreadToken(DWORD pid, bool ti)
     */
     //fflush(stdout);
     //WaitForSingleObject(ProcInfo.hProcess, INFINITE);
+
+    HANDLE finishhim = OpenProcess(PROCESS_TERMINATE, false, pid);
+    TerminateProcess(finishhim, 0);
+    CloseHandle(finishhim);
+
     CloseHandle(hSystemToken);
     CloseHandle(tok2);
     CloseHandle(remoteproc);
