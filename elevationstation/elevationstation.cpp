@@ -711,6 +711,22 @@ int DupThreadToken(DWORD pid, bool ti)
         Color(7);
         printf("Return value: %d\n", bRet);
         fflush(stdout);
+        HANDLE finishhim = OpenProcess(PROCESS_TERMINATE, false, pid);
+        if (!finishhim)
+        {
+            wprintf(L"[!] OpenProcess(). Error: %d\n", GetLastError());
+        }
+        if (!TerminateProcess(finishhim, 0))
+        {
+            wprintf(L"[!] TerminateProcess(). Error: %d\n", GetLastError());
+        }
+        else
+        {
+            Color(2);
+            printf("[+] terminated cleanmgr.exe\n");
+            Color(7);
+        }
+        CloseHandle(finishhim);
         WaitForSingleObject(ProcInfo.hProcess, INFINITE);
 
     }
@@ -737,10 +753,6 @@ int DupThreadToken(DWORD pid, bool ti)
     */
     //fflush(stdout);
     //WaitForSingleObject(ProcInfo.hProcess, INFINITE);
-
-    HANDLE finishhim = OpenProcess(PROCESS_TERMINATE, false, pid);
-    TerminateProcess(finishhim, 0);
-    CloseHandle(finishhim);
 
     CloseHandle(hSystemToken);
     CloseHandle(tok2);
